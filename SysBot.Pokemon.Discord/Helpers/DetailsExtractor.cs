@@ -37,31 +37,36 @@ public static class DetailsExtractor<T> where T : PKM, new()
     public static void AddNormalTradeFields(EmbedBuilder embedBuilder, EmbedData embedData, string trainerMention, T pk)
     {
         var settings = SysCord<T>.Runner.Config.Trade.TradeEmbedSettings;
-        var details = new List<string> { $"**User:** {trainerMention}" };
+        
+        // Column 1: Core Attributes
+        var attrList = new List<string>();
+        if (settings.ShowBall) attrList.Add($"**Ball:** {embedData.Ball}");
+        if (settings.ShowNature) attrList.Add($"**Nature:** {embedData.Nature}{(string.IsNullOrEmpty(embedData.StatNature) ? "" : $" ({embedData.StatNature})")}");
+        if (settings.ShowAbility) attrList.Add($"**Ability:** {embedData.Ability}");
+        if (settings.ShowLanguage) attrList.Add($"**Lang:** {embedData.Language}");
+        
+        // Column 2: Combat/Growth Stats
+        var statsList = new List<string>();
+        if (settings.ShowLevel) statsList.Add($"**Level:** {embedData.Level}");
+        if (pk.Version is GameVersion.SL or GameVersion.VL && settings.ShowTeraType) statsList.Add($"**Tera:** {embedData.TeraType}");
+        if (settings.ShowIVs) statsList.Add($"**IVs:** {embedData.IVsDisplay}");
+        if (settings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay)) statsList.Add($"**EVs:** {embedData.EVsDisplay}");
 
-        if (pk.Version is GameVersion.SL or GameVersion.VL && settings.ShowTeraType)
-            details.Add($"**Tera:** {embedData.TeraType}");
+        string speciesHeader = $"{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}";
+        embedBuilder.WithTitle(speciesHeader);
+
+        if (attrList.Count > 0)
+            embedBuilder.AddField("Attributes", string.Join("\n", attrList), true);
+        
+        if (statsList.Count > 0)
+            embedBuilder.AddField("Stats", string.Join("\n", statsList), true);
+
+        embedBuilder.AddField("Moves", embedData.MovesDisplay, true);
 
         if (pk.Version is GameVersion.PLA or GameVersion.SL or GameVersion.VL && settings.ShowScale)
-            details.Add($"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})");
-
-        if (settings.ShowLevel) details.Add($"**Level:** {embedData.Level}");
-        if (settings.ShowBall) details.Add($"**Ball:** {embedData.Ball}");
-        if (settings.ShowAbility) details.Add($"**Ability:** {embedData.Ability}");
-        if (settings.ShowNature) details.Add($"**Nature:** {embedData.Nature}");
-
-        if (settings.ShowNature && !string.IsNullOrEmpty(embedData.StatNature))
-            details.Add($"**Mint:** {embedData.StatNature}");
-
-        if (settings.ShowLanguage) details.Add($"**Lang:** {embedData.Language}");
-        if (settings.ShowIVs) details.Add($"**IVs:** {embedData.IVsDisplay}");
-        if (settings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay))
-            details.Add($"**EVs:** {embedData.EVsDisplay}");
-
-        string title = $"**{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}**";
-        embedBuilder.AddField(title, string.Join("\n", details), inline: true);
-        embedBuilder.AddField("\u200B", "\u200B", inline: true);
-        embedBuilder.AddField("**Moves**", embedData.MovesDisplay, inline: true);
+        {
+            embedBuilder.AddField("Physical", $"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})", false);
+        }
     }
 
 

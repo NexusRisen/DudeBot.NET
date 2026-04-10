@@ -216,25 +216,14 @@ public static class QueueHelper<T> where T : PKM, new()
             var botct = Info.Hub.Bots.Count;
             var baseEta = position.Position > botct ? Info.Hub.Config.Queues.EstimateDelay(position.Position, botct) : 0;
             var etaMessage = $"{baseEta:F1} min(s) for next trade.";
-            string footerText = $"Current Queue Position: {(position.Position == -1 ? 1 : position.Position)}";
-            string trainerMention = trader.Mention;
-            string userDetailsText = DetailsExtractor<T>.GetUserDetails(totalTradeCount, tradeDetails, trainerMention);
-
-            if (!string.IsNullOrEmpty(userDetailsText))
-            {
-                footerText += $"\n{userDetailsText}";
-            }
-            footerText += $"\n{etaMessage} ";
-            footerText += $"\nDudeBot.NET {DudeBot.Version}";
-
+            
             var embedBuilder = new EmbedBuilder()
                 .WithColor(embedColor)
                 .WithImageUrl(embedData.IsLocalFile ? $"attachment://{Path.GetFileName(embedData.EmbedImageUrl)}" : embedData.EmbedImageUrl)
-                .WithFooter(footerText)
+                .WithFooter($"Position: {(position.Position == -1 ? 1 : position.Position)} | {etaMessage} | v{DudeBot.Version}")
                 .WithAuthor(new EmbedAuthorBuilder()
                     .WithName(embedData.AuthorName)
-                    .WithIconUrl(trader.GetAvatarUrl() ?? trader.GetDefaultAvatarUrl())
-                    .WithUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/FromTheHeart2.png"));
+                    .WithIconUrl(trader.GetAvatarUrl() ?? trader.GetDefaultAvatarUrl()));
 
             DetailsExtractor<T>.AddAdditionalText(embedBuilder);
 

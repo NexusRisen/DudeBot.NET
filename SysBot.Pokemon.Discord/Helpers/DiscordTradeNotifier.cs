@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using PKHeX.Drawing.PokeSprite;
+using SysBot.Pokemon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -168,7 +169,7 @@ public class DiscordTradeNotifier<T> : IPokeTradeNotifier<T>, IDisposable
                 Description = batchDescription,
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"Estimated wait: {(currentETA > 0 ? $"{currentETA} minutes" : "Less than a minute")}"
+                    Text = $"Wait: {(currentETA > 0 ? $"{currentETA} min" : "<1 min")} | v{DudeBot.Version}"
                 },
                 Timestamp = DateTimeOffset.Now
             }.Build();
