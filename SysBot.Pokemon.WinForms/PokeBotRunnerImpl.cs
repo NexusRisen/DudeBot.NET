@@ -1,11 +1,9 @@
 using PKHeX.Core;
 using SysBot.Pokemon.Discord;
-using SysBot.Pokemon.WinForms;
 using System.Threading;
 using System.Threading.Tasks;
 
-
-namespace SysBot.Pokemon;
+namespace SysBot.Pokemon.WinForms;
 
 /// <summary>
 /// Bot Environment implementation with Integrations added.
@@ -13,23 +11,24 @@ namespace SysBot.Pokemon;
 public class PokeBotRunnerImpl<T> : PokeBotRunner<T> where T : PKM, new()
 {
     private readonly ProgramConfig _config;
-    public PokeBotRunnerImpl(PokeTradeHub<T> hub, BotFactory<T> fac) : base(hub, fac) { }
-    public PokeBotRunnerImpl(PokeTradeHubConfig config, BotFactory<T> fac) : base(config, fac) { }
 
-
+    public PokeBotRunnerImpl(PokeTradeHub<T> hub, BotFactory<T> fac, ProgramConfig config) : base(hub, fac)
+    {
+        _config = config;
+    }
 
     protected override void AddIntegrations()
     {
-        AddDiscordBot(Hub.Config.Discord.Token);
+        AddDiscordBot(Hub.Config.Discord);
     }
 
-    private void AddDiscordBot(string apiToken)
+    private void AddDiscordBot(DiscordSettings config)
     {
-        if (string.IsNullOrWhiteSpace(apiToken))
+        var token = config.Token;
+        if (string.IsNullOrWhiteSpace(token))
             return;
 
         var bot = new SysCord<T>(this, _config);
-        Task.Run(() => bot.MainAsync(apiToken, CancellationToken.None));
+        Task.Run(() => bot.MainAsync(token, CancellationToken.None));
     }
-
 }
