@@ -36,26 +36,32 @@ public static class DetailsExtractor<T> where T : PKM, new()
     /// <param name="pk">Pokémon data.</param>
     public static void AddNormalTradeFields(EmbedBuilder embedBuilder, EmbedData embedData, string trainerMention, T pk)
     {
-        string leftSideContent = $"**User:** {trainerMention}\n";
-        leftSideContent +=
-            (pk.Version is GameVersion.SL or GameVersion.VL && SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowTeraType ? $"**Tera Type:** {embedData.TeraType}\n" : "") +
-            (pk.Version is GameVersion.PLA or GameVersion.SL or GameVersion.VL && SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowScale ? $"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowLevel ? $"**Level:** {embedData.Level}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowBall ? $"**Ball:** {embedData.Ball}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowMetLevel ? $"**Met Level:** {embedData.MetLevel}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowMetDate ? $"**Met Date:** {embedData.MetDate}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowAbility ? $"**Ability:** {embedData.Ability}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowNature ? $"**{embedData.Nature}** Nature\n" : "") +
-            // Show Stat Nature for PLZA only, and only if it differs from regular Nature
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowNature && !string.IsNullOrEmpty(embedData.StatNature) ? $"**{embedData.StatNature}** Minted Nature \n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowLanguage ? $"**Language**: {embedData.Language}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowIVs ? $"**IVs**: {embedData.IVsDisplay}\n" : "") +
-            (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay) ? $"**EVs**: {embedData.EVsDisplay}\n" : "");
+        var settings = SysCord<T>.Runner.Config.Trade.TradeEmbedSettings;
+        var details = new List<string> { $"**User:** {trainerMention}" };
 
-        leftSideContent = leftSideContent.TrimEnd('\n');
-        embedBuilder.AddField($"**{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}**", leftSideContent, inline: true);
+        if (pk.Version is GameVersion.SL or GameVersion.VL && settings.ShowTeraType)
+            details.Add($"**Tera:** {embedData.TeraType}");
+
+        if (pk.Version is GameVersion.PLA or GameVersion.SL or GameVersion.VL && settings.ShowScale)
+            details.Add($"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})");
+
+        if (settings.ShowLevel) details.Add($"**Level:** {embedData.Level}");
+        if (settings.ShowBall) details.Add($"**Ball:** {embedData.Ball}");
+        if (settings.ShowAbility) details.Add($"**Ability:** {embedData.Ability}");
+        if (settings.ShowNature) details.Add($"**Nature:** {embedData.Nature}");
+
+        if (settings.ShowNature && !string.IsNullOrEmpty(embedData.StatNature))
+            details.Add($"**Mint:** {embedData.StatNature}");
+
+        if (settings.ShowLanguage) details.Add($"**Lang:** {embedData.Language}");
+        if (settings.ShowIVs) details.Add($"**IVs:** {embedData.IVsDisplay}");
+        if (settings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay))
+            details.Add($"**EVs:** {embedData.EVsDisplay}");
+
+        string title = $"**{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}**";
+        embedBuilder.AddField(title, string.Join("\n", details), inline: true);
         embedBuilder.AddField("\u200B", "\u200B", inline: true);
-        embedBuilder.AddField("**__MOVES__**", embedData.MovesDisplay, inline: true);
+        embedBuilder.AddField("**Moves**", embedData.MovesDisplay, inline: true);
     }
 
 

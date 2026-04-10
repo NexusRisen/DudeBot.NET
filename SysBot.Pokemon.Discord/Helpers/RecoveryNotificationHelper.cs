@@ -42,12 +42,11 @@ public static class RecoveryNotificationHelper
     private static async Task OnBotCrashed(BotCrashEventArgs e)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("⚠️ Bot Crash Detected")
-            .WithDescription($"**Bot**: {e.BotName}\n**Time**: {e.CrashTime:yyyy-MM-dd HH:mm:ss} UTC")
+            .WithTitle("Bot Crash Detected")
+            .WithDescription($"**Bot:** {e.BotName}\n**Time:** {e.CrashTime:yyyy-MM-dd HH:mm:ss} UTC")
             .WithColor(Color.Orange)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("Status", "Attempting automatic recovery...", false)
-            .WithFooter($"{_hubName} Recovery System")
+            .WithFooter("Attempting automatic recovery...")
             .Build();
 
         await SendNotificationAsync(embed);
@@ -58,11 +57,11 @@ public static class RecoveryNotificationHelper
         if (!e.IsSuccess) // Only notify on attempts, not successes (handled separately)
         {
             var embed = new EmbedBuilder()
-                .WithTitle("🔄 Recovery Attempt")
-                .WithDescription($"**Bot**: {e.BotName}\n**Attempt**: {e.AttemptNumber}")
+                .WithTitle("Recovery Attempt")
+                .WithDescription($"**Bot:** {e.BotName}\n**Attempt:** {e.AttemptNumber}")
                 .WithColor(Color.Blue)
                 .WithTimestamp(DateTimeOffset.UtcNow)
-                .WithFooter($"{_hubName} Recovery System")
+                .WithFooter($"{_hubName} System")
                 .Build();
 
             await SendNotificationAsync(embed);
@@ -72,12 +71,11 @@ public static class RecoveryNotificationHelper
     private static async Task OnRecoverySucceeded(BotRecoveryEventArgs e)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("✅ Bot Recovery Successful")
-            .WithDescription($"**Bot**: {e.BotName}\n**Attempts**: {e.AttemptNumber}")
+            .WithTitle("Bot Recovery Successful")
+            .WithDescription($"**Bot:** {e.BotName}\n**Attempts:** {e.AttemptNumber}")
             .WithColor(Color.Green)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("Status", "Bot is now running normally", false)
-            .WithFooter($"{_hubName} Recovery System")
+            .WithFooter("Bot is now running normally")
             .Build();
 
         await SendNotificationAsync(embed);
@@ -86,13 +84,11 @@ public static class RecoveryNotificationHelper
     private static async Task OnRecoveryFailed(BotRecoveryEventArgs e)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("❌ Bot Recovery Failed")
-            .WithDescription($"**Bot**: {e.BotName}\n**Attempts**: {e.AttemptNumber}")
+            .WithTitle("Bot Recovery Failed")
+            .WithDescription($"**Bot:** {e.BotName}\n**Attempts:** {e.AttemptNumber}\n\n**Reason:** {e.FailureReason ?? "Unknown error"}")
             .WithColor(Color.Red)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("Reason", e.FailureReason ?? "Unknown error", false)
-            .AddField("Action Required", "Manual intervention needed to restart this bot", false)
-            .WithFooter($"{_hubName} Recovery System")
+            .WithFooter("Manual intervention required")
             .Build();
 
         await SendNotificationAsync(embed);

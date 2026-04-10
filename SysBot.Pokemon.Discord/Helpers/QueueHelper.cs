@@ -169,9 +169,9 @@ public static class QueueHelper<T> where T : PKM, new()
             var maxCount = SysCord<T>.Runner.Config.Queues.MaxQueueCount;
             var embed = new EmbedBuilder()
                 .WithColor(DiscordColor.Red)
-                .WithTitle("🚫 Queue Full")
-                .WithDescription($"The queue is currently full ({maxCount}/{maxCount}). Please try again later when space becomes available.")
-                .WithFooter("Queue will open up as trades are completed")
+                .WithTitle("Queue Full")
+                .WithDescription($"The queue is currently full ({maxCount}/{maxCount}). Please try again later.")
+                .WithFooter("Queue will open as trades are completed")
                 .WithTimestamp(DateTimeOffset.Now)
                 .Build();
 
@@ -360,9 +360,9 @@ public static class QueueHelper<T> where T : PKM, new()
             var maxCount = SysCord<T>.Runner.Config.Queues.MaxQueueCount;
             var embed = new EmbedBuilder()
                 .WithColor(DiscordColor.Red)
-                .WithTitle("🚫 Queue Full")
-                .WithDescription($"The queue is currently full ({maxCount}/{maxCount}). Please try again later when space becomes available.")
-                .WithFooter("Queue will open up as trades are completed")
+                .WithTitle("Queue Full")
+                .WithDescription($"The queue is currently full ({maxCount}/{maxCount}). Please try again later.")
+                .WithFooter("Queue will open as trades are completed")
                 .WithTimestamp(DateTimeOffset.Now)
                 .Build();
 

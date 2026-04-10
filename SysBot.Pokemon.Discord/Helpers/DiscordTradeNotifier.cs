@@ -112,12 +112,8 @@ public class DiscordTradeNotifier<T> : IPokeTradeNotifier<T>, IDisposable
                         var upNextEmbed = new EmbedBuilder
                         {
                             Color = Color.Gold,
-                            Title = "🎯 You're Up Next!",
+                            Title = "You're Up Next",
                             Description = $"Your trade will begin very soon. Please be ready!{batchInfo}",
-                            Footer = new EmbedFooterBuilder
-                            {
-                                Text = "Get ready to connect!"
-                            },
                             Timestamp = DateTimeOffset.Now
                         }.Build();
 
@@ -168,11 +164,11 @@ public class DiscordTradeNotifier<T> : IPokeTradeNotifier<T>, IDisposable
             var initialEmbed = new EmbedBuilder
             {
                 Color = Color.Green,
-                Title = TotalBatchTrades > 1 ? "🎁 Batch Trade Request Queued" : "Trade Request Queued",
+                Title = TotalBatchTrades > 1 ? "Batch Trade Queued" : "Trade Request Queued",
                 Description = batchDescription,
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"Estimated wait time: {(currentETA > 0 ? $"{currentETA} minutes" : "Less than a minute")}"
+                    Text = $"Estimated wait: {(currentETA > 0 ? $"{currentETA} minutes" : "Less than a minute")}"
                 },
                 Timestamp = DateTimeOffset.Now
             }.Build();
