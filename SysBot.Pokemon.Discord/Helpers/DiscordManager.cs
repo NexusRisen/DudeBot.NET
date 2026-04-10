@@ -26,15 +26,13 @@ public class DiscordManager(DiscordSettings Config)
 
     public RemoteControlAccessList RolesTrade => Config.RoleCanTrade;
 
-    public RemoteControlAccessList RolesSeed => Config.RoleCanSeed;
+    public RemoteControlAccessList RolesSeed => Config.RoleCanSeedCheckorSpecialRequest;
 
     public RemoteControlAccessList RolesDump => Config.RoleCanDump;
 
     public RemoteControlAccessList RolesFixOT => Config.RoleCanFixOT;
 
     public RemoteControlAccessList RolesRemoteControl => Config.RoleRemoteControl;
-
-    public RemoteControlAccessList BlacklistedChannels => Config.ChannelBlacklist;
 
     public RemoteControlAccessList SudoDiscord => Config.GlobalSudoList;
 
