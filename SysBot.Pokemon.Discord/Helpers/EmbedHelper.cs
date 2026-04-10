@@ -22,11 +22,11 @@ public static class EmbedHelper
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle("Notice...")
+                .WithTitle("Notice")
                 .WithDescription(message)
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/dm-legalityerror.gif")
-                .WithColor(Color.Red)
+                .WithColor(Color.Orange)
                 .Build();
 
             await dm.SendMessageAsync(embed: embed).ConfigureAwait(false);
@@ -58,8 +58,8 @@ public static class EmbedHelper
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle("Trade Canceled...")
-                .WithDescription($"Your trade was canceled.\n**Reason**: {reason}")
+                .WithTitle("Trade Canceled")
+                .WithDescription(reason)
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/dm-uhoherror.gif")
                 .WithColor(Color.Red)
@@ -94,8 +94,8 @@ public static class EmbedHelper
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle("Here's your Link Trade Code!")
-                .WithDescription($"# {code:0000 0000}\n*I'll notify you when your trade starts!*")
+                .WithTitle("Link Trade Code")
+                .WithDescription($"**Code:** `{code:0000 0000}`\n\n*I will notify you when it is time to search.*")
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/dm-tradecode.gif")
                 .WithColor(Color.Gold)
@@ -123,19 +123,12 @@ public static class EmbedHelper
     {
         try
         {
-            string thumbnailUrl;
-
-            if (isMysteryEgg)
-            {
-                thumbnailUrl = "https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/mysteryegg3.png";
-            }
-            else
-            {
-                thumbnailUrl = TradeExtensions<T>.PokeImg(pk, false, true, null);
-            }
+            string thumbnailUrl = isMysteryEgg 
+                ? "https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/mysteryegg3.png" 
+                : TradeExtensions<T>.PokeImg(pk, false, true, null);
 
             var embed = new EmbedBuilder()
-                .WithTitle("Trade Completed!")
+                .WithTitle("Trade Completed")
                 .WithDescription(message)
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl(thumbnailUrl)
@@ -165,25 +158,19 @@ public static class EmbedHelper
                 return;
             }
 
-            if (isMysteryEgg)
-            {
-                speciesName = "**Mystery Egg**";
-            }
-
             var embed = new EmbedBuilder()
-                .WithTitle("Loading the Trade Menu...")
-                .WithDescription($"**Pokemon**: {speciesName}\n**Trade Code**: {code:0000 0000}")
+                .WithTitle("Initializing Trade")
+                .WithDescription($"**Pokémon:** {(isMysteryEgg ? "Mystery Egg" : speciesName)}\n**Code:** `{code:0000 0000}`")
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/dm-initializingbot.gif")
-                .WithColor(Color.Green);
+                .WithColor(Color.Blue);
 
             if (!string.IsNullOrEmpty(message))
             {
                 embed.WithDescription($"{embed.Description}\n\n{message}");
             }
 
-            var builtEmbed = embed.Build();
-            await dm.SendMessageAsync(embed: builtEmbed).ConfigureAwait(false);
+            await dm.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
         catch (ObjectDisposedException)
         {
@@ -212,19 +199,18 @@ public static class EmbedHelper
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle($"Now Searching...")
-                .WithDescription($"**Waiting For**: {trainerName}\n**My IGN**: {inGameName}\n\n**Insert your Trade Code!**")
+                .WithTitle("Searching for Trade")
+                .WithDescription($"**Waiting For:** {trainerName}\n**My IGN:** {inGameName}\n\n*Please begin searching now using your code.*")
                 .WithTimestamp(DateTimeOffset.Now)
                 .WithThumbnailUrl("https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/main/dm-nowsearching.gif")
-                .WithColor(Color.DarkGreen);
+                .WithColor(Color.Green);
 
             if (!string.IsNullOrEmpty(message))
             {
                 embed.WithDescription($"{embed.Description}\n\n{message}");
             }
 
-            var builtEmbed = embed.Build();
-            await dm.SendMessageAsync(embed: builtEmbed).ConfigureAwait(false);
+            await dm.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
         catch (ObjectDisposedException)
         {
