@@ -131,8 +131,8 @@ Ball: Poke Ball");
         egg.Should().NotBeNull();
 
         var pk9 = (PK9)egg;
-        pk9.OriginalTrainerFriendship.Should().BeGreaterOrEqualTo(1, "egg should have minimum hatch cycles");
-        pk9.OriginalTrainerFriendship.Should().BeLessOrEqualTo(pk9.PersonalInfo.HatchCycles, "egg friendship should not exceed species hatch cycles");
+        pk9.OriginalTrainerFriendship.Should().BeGreaterThanOrEqualTo(1, "egg should have minimum hatch cycles");
+        pk9.OriginalTrainerFriendship.Should().BeLessThanOrEqualTo(pk9.PersonalInfo.HatchCycles, "egg friendship should not exceed species hatch cycles");
     }
 
     [Fact]

@@ -46,12 +46,9 @@ public static class LogUtil
             var masterLogFile = new FileTarget("masterlog")
             {
                 FileName = Path.Combine(WorkingDirectory, "logs", "SysBotLog.txt"),
-                ConcurrentWrites = true,
-
                 ArchiveEvery = FileArchivePeriod.Day,
-                ArchiveNumbering = ArchiveNumberingMode.Date,
+                ArchiveSuffixFormat = ".{#}",
                 ArchiveFileName = Path.Combine(WorkingDirectory, "logs", "SysBotLog.{#}.txt"),
-                ArchiveDateFormat = "yyyy-MM-dd",
                 ArchiveAboveSize = LogConfig.MaxLogFileSize,
                 MaxArchiveFiles = LogConfig.MaxArchiveFiles,
                 Encoding = Encoding.Unicode,
@@ -97,12 +94,9 @@ public static class LogUtil
             var botLogTarget = new FileTarget($"botlog_{safeBotName}")
             {
                 FileName = Path.Combine(botLogDir, fileName),
-                ConcurrentWrites = true,
-
                 ArchiveEvery = FileArchivePeriod.Day,
-                ArchiveNumbering = ArchiveNumberingMode.Date,
+                ArchiveSuffixFormat = ".{#}",
                 ArchiveFileName = Path.Combine(botLogDir, "SysBotLog.{#}.txt"),
-                ArchiveDateFormat = "yyyy-MM-dd",
                 ArchiveAboveSize = LogConfig.MaxLogFileSize,
                 MaxArchiveFiles = LogConfig.MaxArchiveFiles,
                 Encoding = Encoding.Unicode,
