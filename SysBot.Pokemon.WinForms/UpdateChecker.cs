@@ -10,7 +10,7 @@ namespace SysBot.Pokemon.WinForms
 {
     public class UpdateChecker
     {
-        private const string RepositoryOwner = "Havokx89";
+        private const string RepositoryOwner = "NexusRisen";
         private const string RepositoryName = "DudeBot.NET";
 
         public static async Task<(bool UpdateAvailable, bool UpdateRequired, string NewVersion)> CheckForUpdatesAsync(bool forceShow = false)
@@ -42,9 +42,13 @@ namespace SysBot.Pokemon.WinForms
             if (latestRelease?.Assets == null)
                 return null;
 
+            string arch = Environment.Is64BitProcess ? "x64" : "x86";
+            string targetName = $"dudebot-{arch}.exe";
+
             return latestRelease.Assets
-                .FirstOrDefault(a => a.Name?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) == true)
-                ?.BrowserDownloadUrl;
+                .FirstOrDefault(a => a.Name?.Equals(targetName, StringComparison.OrdinalIgnoreCase) == true)
+                ?.BrowserDownloadUrl 
+                ?? latestRelease.Assets.FirstOrDefault(a => a.Name?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) == true)?.BrowserDownloadUrl;
         }
 
         private static async Task<ReleaseInfo?> FetchLatestReleaseAsync()
@@ -52,7 +56,7 @@ namespace SysBot.Pokemon.WinForms
             using var client = new HttpClient();
             try
             {
-                client.DefaultRequestHeaders.Add("User-Agent", "SysBot");
+                client.DefaultRequestHeaders.Add("User-Agent", "DudeBot");
 
                 string releasesUrl = $"https://api.github.com/repos/{RepositoryOwner}/{RepositoryName}/releases/latest";
                 HttpResponseMessage response = await client.GetAsync(releasesUrl);

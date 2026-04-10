@@ -14,17 +14,24 @@ namespace SysBot.Pokemon.WinForms
         private Label labelUpdateInfo;
         private readonly Label labelChangelogTitle = new();
         private TextBox textBoxChangelog;
+        private ProgressBar progressBarDownload;
+        private Label labelProgress;
         private readonly bool isUpdateRequired;
         private readonly bool isUpdateAvailable;
         private readonly string newVersion;
 
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        // Colors based on the app's Dark Theme
+        private static readonly Color DarkGrey = Color.FromArgb(30, 30, 30);
+        private static readonly Color LightGrey = Color.FromArgb(60, 60, 60);
+        private static readonly Color SoftWhite = Color.FromArgb(245, 245, 245);
+        private static readonly Color AccentBlue = Color.FromArgb(0, 120, 215);
+
         public UpdateForm(bool updateRequired, string newVersion, bool updateAvailable)
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             isUpdateRequired = updateRequired;
             this.newVersion = newVersion;
             isUpdateAvailable = updateAvailable;
+            
             InitializeComponent();
             Load += async (sender, e) => await FetchAndDisplayChangelog();
             UpdateFormText();
@@ -34,16 +41,32 @@ namespace SysBot.Pokemon.WinForms
         {
             labelUpdateInfo = new Label();
             buttonDownload = new Button();
+            progressBarDownload = new ProgressBar();
+            labelProgress = new Label();
+            textBoxChangelog = new TextBox();
 
-            ClientSize = new Size(500, 300);
+            SuspendLayout();
 
-            labelUpdateInfo.AutoSize = true;
-            labelUpdateInfo.Location = new Point(12, 20);
-            labelUpdateInfo.Size = new Size(460, 60);
+            // Form Settings
+            ClientSize = new Size(520, 400);
+            BackColor = DarkGrey;
+            ForeColor = SoftWhite;
+            Font = new Font("Segoe UI", 9F);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = isUpdateAvailable ? $"Update Available ({newVersion})" : "Re-Download Latest Version";
 
+            // labelUpdateInfo
+            labelUpdateInfo.AutoSize = false;
+            labelUpdateInfo.Location = new Point(15, 15);
+            labelUpdateInfo.Size = new Size(490, 50);
+            labelUpdateInfo.TextAlign = ContentAlignment.MiddleLeft;
             if (isUpdateRequired)
             {
                 labelUpdateInfo.Text = "A required update is available. You must update to continue using this application.";
+                labelUpdateInfo.ForeColor = Color.FromArgb(255, 100, 100); // Light red for alert
                 ControlBox = false;
             }
             else if (isUpdateAvailable)
@@ -56,107 +79,148 @@ namespace SysBot.Pokemon.WinForms
                 buttonDownload.Text = "Re-Download Latest Version";
             }
 
-            buttonDownload.Size = new Size(130, 23);
-            int buttonX = (ClientSize.Width - buttonDownload.Size.Width) / 2;
-            int buttonY = ClientSize.Height - buttonDownload.Size.Height - 20;
-            buttonDownload.Location = new Point(buttonX, buttonY);
+            // labelChangelogTitle
+            labelChangelogTitle.AutoSize = true;
+            labelChangelogTitle.Location = new Point(15, 75);
+            labelChangelogTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            labelChangelogTitle.Text = $"Changelog ({newVersion}):";
+
+            // textBoxChangelog
+            textBoxChangelog.Multiline = true;
+            textBoxChangelog.ReadOnly = true;
+            textBoxChangelog.ScrollBars = ScrollBars.Vertical;
+            textBoxChangelog.Location = new Point(15, 100);
+            textBoxChangelog.Size = new Size(490, 180);
+            textBoxChangelog.BackColor = Color.FromArgb(20, 20, 20);
+            textBoxChangelog.ForeColor = Color.LightGray;
+            textBoxChangelog.BorderStyle = BorderStyle.FixedSingle;
+
+            // progressBarDownload
+            progressBarDownload.Location = new Point(15, 295);
+            progressBarDownload.Size = new Size(410, 23);
+            progressBarDownload.Visible = false;
+
+            // labelProgress
+            labelProgress.AutoSize = true;
+            labelProgress.Location = new Point(435, 298);
+            labelProgress.Size = new Size(50, 20);
+            labelProgress.Text = "0%";
+            labelProgress.Visible = false;
+
+            // buttonDownload
+            buttonDownload.Size = new Size(180, 35);
+            buttonDownload.Location = new Point(170, 340);
+            buttonDownload.FlatStyle = FlatStyle.Flat;
+            buttonDownload.FlatAppearance.BorderSize = 1;
+            buttonDownload.FlatAppearance.BorderColor = LightGrey;
+            buttonDownload.BackColor = Color.FromArgb(50, 50, 50);
             if (string.IsNullOrEmpty(buttonDownload.Text))
             {
                 buttonDownload.Text = "Download Update";
             }
             buttonDownload.Click += ButtonDownload_Click;
 
-            labelChangelogTitle.AutoSize = true;
-            labelChangelogTitle.Location = new Point(10, 60);
-            labelChangelogTitle.Size = new Size(70, 15);
-            labelChangelogTitle.Font = new Font(labelChangelogTitle.Font.FontFamily, 11, FontStyle.Bold);
-            labelChangelogTitle.Text = $"Changelog ({newVersion}):";
-
-            textBoxChangelog = new TextBox
-            {
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                Location = new Point(10, 90),
-                Size = new Size(480, 150),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Bottom | AnchorStyles.Right
-            };
-
             Controls.Add(labelUpdateInfo);
-            Controls.Add(buttonDownload);
             Controls.Add(labelChangelogTitle);
             Controls.Add(textBoxChangelog);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            Name = "UpdateForm";
-            StartPosition = FormStartPosition.CenterScreen;
-            UpdateFormText();
+            Controls.Add(progressBarDownload);
+            Controls.Add(labelProgress);
+            Controls.Add(buttonDownload);
+
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         private void UpdateFormText()
         {
-            if (isUpdateAvailable)
-            {
-                Text = $"Update Available ({newVersion})";
-            }
-            else
-            {
-                Text = "Re-Download Latest Version";
-            }
+            Text = isUpdateAvailable ? $"Update Available ({newVersion})" : "Re-Download Latest Version";
         }
 
         private async Task FetchAndDisplayChangelog()
         {
-            _ = new UpdateChecker();
+            textBoxChangelog.Text = "Fetching changelog...";
             textBoxChangelog.Text = await UpdateChecker.FetchChangelogAsync();
         }
 
         private async void ButtonDownload_Click(object? sender, EventArgs? e)
         {
             buttonDownload.Enabled = false;
-            buttonDownload.Text = "Downloading...";
+            buttonDownload.Text = "Initializing...";
+            progressBarDownload.Visible = true;
+            labelProgress.Visible = true;
+            progressBarDownload.Value = 0;
 
             try
             {
                 string? downloadUrl = await UpdateChecker.FetchDownloadUrlAsync();
                 if (!string.IsNullOrWhiteSpace(downloadUrl))
                 {
-                    string downloadedFilePath = await StartDownloadProcessAsync(downloadUrl);
+                    IProgress<int> progress = new Progress<int>(v => {
+                        progressBarDownload.Value = v;
+                        labelProgress.Text = $"{v}%";
+                    });
+
+                    string downloadedFilePath = await StartDownloadProcessAsync(downloadUrl, progress);
                     if (!string.IsNullOrEmpty(downloadedFilePath))
                     {
+                        buttonDownload.Text = "Installing...";
                         InstallUpdate(downloadedFilePath);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Failed to fetch the download URL. Please check your internet connection and try again.",
-                        "Download Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Failed to fetch the download URL.", "Download Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ResetUI();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Update failed: {ex.Message}", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                buttonDownload.Enabled = true;
-                buttonDownload.Text = isUpdateAvailable ? "Download Update" : "Re-Download Latest Version";
+                ResetUI();
             }
         }
 
-        private static async Task<string> StartDownloadProcessAsync(string downloadUrl)
+        private void ResetUI()
+        {
+            buttonDownload.Enabled = true;
+            buttonDownload.Text = isUpdateAvailable ? "Download Update" : "Re-Download Latest Version";
+            progressBarDownload.Visible = false;
+            labelProgress.Visible = false;
+        }
+
+        private static async Task<string> StartDownloadProcessAsync(string downloadUrl, IProgress<int> progress)
         {
             Main.IsUpdating = true;
-            string tempPath = Path.Combine(Path.GetTempPath(), $"SysBot.Pokemon.WinForms_{Guid.NewGuid()}.exe");
+            string tempPath = Path.Combine(Path.GetTempPath(), $"dudebot_{Guid.NewGuid()}.exe");
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("User-Agent", "SysBot");
-                var response = await client.GetAsync(downloadUrl);
-                response.EnsureSuccessStatusCode();
-                var fileBytes = await response.Content.ReadAsByteArrayAsync();
-                await File.WriteAllBytesAsync(tempPath, fileBytes);
+                client.DefaultRequestHeaders.Add("User-Agent", "DudeBot");
+                
+                using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+                    var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                    var buffer = new byte[8192];
+                    var totalRead = 0L;
+
+                    using (var contentStream = await response.Content.ReadAsStreamAsync())
+                    using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                    {
+                        int bytesRead;
+                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                        {
+                            await fileStream.WriteAsync(buffer, 0, bytesRead);
+                            totalRead += bytesRead;
+
+                            if (totalBytes != -1)
+                            {
+                                int percentage = (int)((totalRead * 100) / totalBytes);
+                                progress.Report(percentage);
+                            }
+                        }
+                    }
+                }
             }
 
             return tempPath;
@@ -168,37 +232,36 @@ namespace SysBot.Pokemon.WinForms
             {
                 string currentExePath = Application.ExecutablePath;
                 string applicationDirectory = Path.GetDirectoryName(currentExePath) ?? "";
-                string executableName = Path.GetFileName(currentExePath);
-                string backupPath = Path.Combine(applicationDirectory, $"{executableName}.backup");
+                string targetExePath = Path.Combine(applicationDirectory, "dudebot.exe");
+                string backupPath = Path.Combine(applicationDirectory, "dudebot.exe.backup");
 
-                // Create batch file for update process
-                string batchPath = Path.Combine(Path.GetTempPath(), "UpdateSysBot.bat");
+                string batchPath = Path.Combine(Path.GetTempPath(), "UpdateDudeBot.bat");
+                
+                string cleanupCommand = !currentExePath.Equals(targetExePath, StringComparison.OrdinalIgnoreCase) 
+                    ? $"del \"{currentExePath}\"" 
+                    : "";
+
                 string batchContent = @$"
-                                            @echo off
-                                            timeout /t 2 /nobreak >nul
-                                            echo Updating SysBot...
+@echo off
+timeout /t 2 /nobreak >nul
+echo Updating DudeBot...
 
-                                            rem Backup current version
-                                            if exist ""{currentExePath}"" (
-                                                if exist ""{backupPath}"" (
-                                                    del ""{backupPath}""
-                                                )
-                                                move ""{currentExePath}"" ""{backupPath}""
-                                            )
+if exist ""{targetExePath}"" (
+    if exist ""{backupPath}"" (
+        del ""{backupPath}""
+    )
+    move ""{targetExePath}"" ""{backupPath}""
+)
 
-                                            rem Install new version
-                                            move ""{downloadedFilePath}"" ""{currentExePath}""
+move ""{downloadedFilePath}"" ""{targetExePath}""
+{cleanupCommand}
 
-                                            rem Start new version
-                                            start """" ""{currentExePath}""
-
-                                            rem Clean up
-                                            del ""%~f0""
-                                            ";
+start """" ""{targetExePath}""
+del ""%~f0""
+";
 
                 File.WriteAllText(batchPath, batchContent);
 
-                // Start the update batch file
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = batchPath,
@@ -208,13 +271,12 @@ namespace SysBot.Pokemon.WinForms
                 };
 
                 Process.Start(startInfo);
-
-                // Exit the current instance
                 Application.Exit();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to install update: {ex.Message}", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ResetUI();
             }
         }
     }

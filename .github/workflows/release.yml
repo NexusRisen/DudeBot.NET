@@ -32,13 +32,16 @@ jobs:
     - name: Zip Release
       shell: pwsh
       run: |
-        Compress-Archive -Path ./publish/win-${{ matrix.arch }}/* -DestinationPath ./DudeBot-win-${{ matrix.arch }}.zip
+        Compress-Archive -Path ./publish/win-${{ matrix.arch }}/* -DestinationPath ./dudebot-win-${{ matrix.arch }}.zip
+        cp ./publish/win-${{ matrix.arch }}/dudebot.exe ./dudebot-${{ matrix.arch }}.exe
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: DudeBot-win-${{ matrix.arch }}
-        path: ./DudeBot-win-${{ matrix.arch }}.zip
+        name: dudebot-win-${{ matrix.arch }}
+        path: |
+          ./dudebot-win-${{ matrix.arch }}.zip
+          ./dudebot-${{ matrix.arch }}.exe
 
   release:
     needs: build
@@ -60,8 +63,10 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          artifacts/DudeBot-win-x64/DudeBot-win-x64.zip
-          artifacts/DudeBot-win-x86/DudeBot-win-x86.zip
+          artifacts/dudebot-win-x64/dudebot-win-x64.zip
+          artifacts/dudebot-win-x86/dudebot-win-x86.zip
+          artifacts/dudebot-win-x64/dudebot-x64.exe
+          artifacts/dudebot-win-x86/dudebot-x86.exe
         generate_release_notes: true
         draft: false
         prerelease: false
