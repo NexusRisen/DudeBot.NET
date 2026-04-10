@@ -547,10 +547,10 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
     [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
     public async Task BatchTradeAsync([Summary("List of Showdown Sets separated by '---'")][Remainder] string content)
     {
-        var tradeConfig = SysCord<T>.Runner.Config.Trade.TradeConfiguration;
+        var batchSettings = SysCord<T>.Runner.Config.Trade.BatchSettings;
 
         // Check if batch trades are allowed
-        if (!tradeConfig.AllowBatchTrades)
+        if (!batchSettings.AllowBatchTrades)
         {
             var app = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(false);
             await Helpers<T>.ReplyAndDeleteAsync(Context,
@@ -571,7 +571,7 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
 
 
         // Use configured max trades per batch, default to 3 if less than 1
-        int maxTradesAllowed = tradeConfig.MaxPkmsPerTrade > 0 ? tradeConfig.MaxPkmsPerTrade : 3;
+        int maxTradesAllowed = batchSettings.MaxPkmsPerTrade;
 
         if (trades.Count > maxTradesAllowed)
         {

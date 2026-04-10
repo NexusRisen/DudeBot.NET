@@ -34,6 +34,9 @@ public class TradeSettings : IBotStateSettings, ICountSettings
     [Category(TradeConfig), Description("Settings related to Trade Configuration."), DisplayName("Trade Configuration"), Browsable(true)]
     public TradeSettingsCategory TradeConfiguration { get; set; } = new();
 
+    [Category("BatchTradeConfig"), Description("Settings related to Batch Trade Configuration."), DisplayName("Batch Trade Configuration"), Browsable(true)]
+    public BatchTradeSettingsCategory BatchSettings { get; set; } = new();
+
     [Category(EmbedSettings), Description("Settings related to the Trade Embed in Discord."), DisplayName("Trade Embed Settings"), Browsable(true)]
     public TradeEmbedSettingsCategory TradeEmbedSettings { get; set; } = new();
 
@@ -69,15 +72,6 @@ public class TradeSettings : IBotStateSettings, ICountSettings
         [Category(TradeConfig), Description("If set to True, each valid Pokemon will come with all suggested Relearnable Moves without the need for a batch command."), DisplayName("Suggest Relearnable Moves by Default")]
         public bool SuggestRelearnMoves { get; set; } = true;
 
-        [Category(TradeConfig), Description("Toggle to give users the option to use the BatchNormalizer, which utilizes Showdown in place of batch commands. Refer to the Wiki for details."), DisplayName("Batch Commands to Showdown")]
-        public bool BatchNormalizer { get; set; } = true;
-
-        [Category(TradeConfig), Description("Toggle to allow or disallow batch trades."), DisplayName("Allow Batch Trades")]
-        public bool AllowBatchTrades { get; set; } = true;
-
-        [Category(TradeConfig), Description("Maximum pokemons of single trade. Batch mode will default to 3 if this configuration is less than 1"), DisplayName("Maximum Pokémon per Trade")]
-        public int MaxPkmsPerTrade { get; set; } = 3;
-
         [Category(TradeConfig), Description("Dump Trade: Dumping routine will stop after a maximum number of dumps from a single user."), DisplayName("Maximum Dumps per Trade")]
         public int MaxDumpsPerTrade { get; set; } = 20;
 
@@ -107,6 +101,26 @@ public class TradeSettings : IBotStateSettings, ICountSettings
             ppMax = 53,
             FreshStartMochi = 2479,
         }
+    }
+
+    [Category("BatchTradeConfig"), TypeConverter(typeof(CategoryConverter<BatchTradeSettingsCategory>))]
+    public class BatchTradeSettingsCategory
+    {
+        public override string ToString() => "Batch Trade Configuration Settings";
+
+        [Category("BatchTradeConfig"), Description("Toggle to allow or disallow batch trades."), DisplayName("Allow Batch Trades")]
+        public bool AllowBatchTrades { get; set; } = true;
+
+        private int _maxPkmsPerTrade = 3;
+        [Category("BatchTradeConfig"), Description("Maximum Pokémon per trade. Batch mode will default to 3 if this configuration is less than 1. No upper limit, mind your queues."), DisplayName("Maximum Pokémon per Trade")]
+        public int MaxPkmsPerTrade
+        {
+            get => _maxPkmsPerTrade < 1 ? 3 : _maxPkmsPerTrade;
+            set => _maxPkmsPerTrade = value;
+        }
+
+        [Category("BatchTradeConfig"), Description("Toggle to give users the option to use the BatchNormalizer, which utilizes Showdown in place of batch commands. Refer to the Wiki for details."), DisplayName("Batch Commands to Showdown")]
+        public bool BatchNormalizer { get; set; } = true;
     }
 
     [Category(EmbedSettings), TypeConverter(typeof(CategoryConverter<TradeEmbedSettingsCategory>))]
