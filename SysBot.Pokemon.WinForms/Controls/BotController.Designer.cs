@@ -39,20 +39,20 @@
             // L_Description
             // 
             this.L_Description.AutoSize = true;
-            this.L_Description.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.L_Description.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.L_Description.Location = new System.Drawing.Point(150, 9);
             this.L_Description.Name = "L_Description";
-            this.L_Description.Size = new System.Drawing.Size(49, 14);
+            this.L_Description.Size = new System.Drawing.Size(39, 15);
             this.L_Description.TabIndex = 2;
             this.L_Description.Text = "Status";
             // 
             // L_Left
             // 
             this.L_Left.AutoSize = true;
-            this.L_Left.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.L_Left.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.L_Left.Location = new System.Drawing.Point(31, 2);
             this.L_Left.Name = "L_Left";
-            this.L_Left.Size = new System.Drawing.Size(112, 28);
+            this.L_Left.Size = new System.Drawing.Size(94, 30);
             this.L_Left.TabIndex = 3;
             this.L_Left.Text = "192.168.123.123\r\nEncounterBot";
             // 

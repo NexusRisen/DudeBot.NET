@@ -193,7 +193,7 @@ public partial class BotController : UserControl
         return Color.FromArgb(r, g, b);
     }
 
-    private void BotController_MouseEnter(object? sender, EventArgs e) => BackColor = Color.LightSkyBlue;
+    private void BotController_MouseEnter(object? sender, EventArgs e) => BackColor = ThemeManager.CurrentTheme.BotControllerHoverColor;
 
     private void BotController_MouseLeave(object? sender, EventArgs e) => BackColor = Color.Transparent;
 

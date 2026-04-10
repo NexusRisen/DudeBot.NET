@@ -7,6 +7,17 @@ For support on setting up your own instance of DudeBot.NET, feel free to join th
 
 [sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
 
+## Screenshots
+
+### Bots Dashboard
+![Bots](pictures/Bots.bmp)
+
+### Settings
+![Settings](pictures/settings.bmp)
+
+### Logs
+![Logs](pictures/logs.bmp)
+
 ## SysBot.Base:
 - Base logic library to be built upon in game-specific projects.
 - Contains a synchronous and asynchronous Bot connection class to interact with sys-botbase.

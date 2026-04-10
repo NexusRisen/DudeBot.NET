@@ -13,19 +13,13 @@ namespace SysBot.Pokemon.WinForms
         private const string RepositoryOwner = "NexusRisen";
         private const string RepositoryName = "DudeBot.NET";
 
-        public static async Task<(bool UpdateAvailable, bool UpdateRequired, string NewVersion)> CheckForUpdatesAsync(bool forceShow = false)
+        public static async Task<(bool UpdateAvailable, bool UpdateRequired, string NewVersion)> CheckForUpdatesAsync()
         {
             ReleaseInfo? latestRelease = await FetchLatestReleaseAsync();
 
             bool updateAvailable = latestRelease != null && latestRelease.TagName != DudeBot.Version;
             bool updateRequired = latestRelease?.Prerelease == false && IsUpdateRequired(latestRelease?.Body);
             string? newVersion = latestRelease?.TagName;
-
-            if (updateAvailable || forceShow)
-            {
-                var updateForm = new UpdateForm(updateRequired, newVersion ?? "", updateAvailable);
-                updateForm.ShowDialog();
-            }
 
             return (updateAvailable, updateRequired, newVersion ?? string.Empty);
         }

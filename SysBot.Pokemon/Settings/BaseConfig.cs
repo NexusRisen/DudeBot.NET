@@ -39,4 +39,7 @@ public abstract class BaseConfig
 
     [Category(FeatureToggle), Description("When enabled, the bot will Enter Link Trade Code via Keyboard (faster).")]
     public bool UseKeyboard { get; set; } = true;
+
+    [Category(FeatureToggle), Description("When enabled, the program will minimize to the system tray instead of the taskbar.")]
+    public bool MinimizeToTray { get; set; } = false;
 }

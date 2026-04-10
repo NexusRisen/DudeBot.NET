@@ -10,12 +10,12 @@ namespace SysBot.Pokemon.WinForms
 {
     public class UpdateForm : Form
     {
-        private Button buttonDownload;
-        private Label labelUpdateInfo;
+        private Button buttonDownload = null!;
+        private Label labelUpdateInfo = null!;
         private readonly Label labelChangelogTitle = new();
-        private TextBox textBoxChangelog;
-        private ProgressBar progressBarDownload;
-        private Label labelProgress;
+        private TextBox textBoxChangelog = null!;
+        private ProgressBar progressBarDownload = null!;
+        private Label labelProgress = null!;
         private readonly bool isUpdateRequired;
         private readonly bool isUpdateAvailable;
         private readonly string newVersion;
@@ -33,6 +33,11 @@ namespace SysBot.Pokemon.WinForms
             isUpdateAvailable = updateAvailable;
             
             InitializeComponent();
+            ThemeManager.ApplyTheme(this, ThemeManager.CurrentTheme);
+            if (isUpdateRequired)
+            {
+                labelUpdateInfo.ForeColor = Color.FromArgb(255, 100, 100); // Re-apply alert color after theme
+            }
             Load += async (sender, e) => await FetchAndDisplayChangelog();
             UpdateFormText();
         }
@@ -40,7 +45,7 @@ namespace SysBot.Pokemon.WinForms
         private void InitializeComponent()
         {
             labelUpdateInfo = new Label();
-            buttonDownload = new Button();
+            buttonDownload = new Button { Name = "ButtonUpdate" };
             progressBarDownload = new ProgressBar();
             labelProgress = new Label();
             textBoxChangelog = new TextBox();
@@ -49,9 +54,6 @@ namespace SysBot.Pokemon.WinForms
 
             // Form Settings
             ClientSize = new Size(520, 400);
-            BackColor = DarkGrey;
-            ForeColor = SoftWhite;
-            Font = new Font("Segoe UI", 9F);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
