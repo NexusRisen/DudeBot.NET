@@ -167,7 +167,7 @@ public class QueueModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
             QueueResultRemove.CurrentlyProcessing => "Looks like you have trades currently being processed! Did not remove those from the queue.",
             QueueResultRemove.CurrentlyProcessingRemoved => "Looks like you have trades currently being processed! Removed other pending trades from the queue.",
             QueueResultRemove.NotInQueue => "Sorry, you are not currently in the queue.",
-            _ => throw new ArgumentOutOfRangeException(nameof(result), result, null),
+            _ => "An unexpected result occurred while trying to remove your trades from the queue.",
         };
     }
 

@@ -5,11 +5,9 @@ using PKHeX.Core;
 using SysBot.Base;
 using SysBot.Pokemon.Helpers;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord;
@@ -17,13 +15,6 @@ namespace SysBot.Pokemon.Discord;
 public static class ReusableActions
 {
     private static readonly string[] separator = [",", ", ", " "];
-
-    // Global rate limiter for Discord DM sends to prevent opening DMs too fast
-    private static readonly SemaphoreSlim _dmRateLimiter = new(1, 1);
-    private static readonly ConcurrentDictionary<ulong, IDMChannel> _dmChannels = new();
-    private static DateTime _lastDmTime = DateTime.MinValue;
-    private const int MinDmDelayMs = 2000; // Minimum 2 seconds between DMs to respect Discord rate limits
-
 
     public static async Task EchoAndReply(this ISocketMessageChannel channel, string msg)
     {
@@ -157,63 +148,10 @@ public static class ReusableActions
         return Format.Code(string.Join("\n", lines).TrimEnd());
     }
 
-
     public static IReadOnlyList<string> GetListFromString(string str)
     {
         // Extract comma separated list
         return str.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-    }
-
-    private static async Task<IDMChannel?> GetOrCreateDMAsync(IUser user)
-    {
-        try
-        {
-            if (_dmChannels.TryGetValue(user.Id, out var channel))
-                return channel;
-
-            // Enforce minimum delay before creating a new DM channel to respect Discord rate limits
-            var timeSinceLastDm = DateTime.Now - _lastDmTime;
-            if (timeSinceLastDm.TotalMilliseconds < MinDmDelayMs)
-            {
-                var remainingDelay = MinDmDelayMs - (int)timeSinceLastDm.TotalMilliseconds;
-                await Task.Delay(remainingDelay).ConfigureAwait(false);
-            }
-
-            var dm = await user.CreateDMChannelAsync().ConfigureAwait(false);
-            _dmChannels[user.Id] = dm;
-            _lastDmTime = DateTime.Now; // Update after creating DM channel
-            return dm;
-        }
-        catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
-        {
-            // Error 40003 = Opening DMs too fast
-            LogUtil.LogError($"Opening DMs too fast when creating DM channel for user {user.Username} ({user.Id}). Waiting 5 seconds...", "GetOrCreateDMAsync");
-            await Task.Delay(5000).ConfigureAwait(false);
-
-            // Try one more time after the delay
-            try
-            {
-                var dm = await user.CreateDMChannelAsync().ConfigureAwait(false);
-                _dmChannels[user.Id] = dm;
-                _lastDmTime = DateTime.Now;
-                return dm;
-            }
-            catch (Exception retryEx)
-            {
-                LogUtil.LogError($"Failed to create DM channel after retry: {retryEx.Message}", "GetOrCreateDMAsync");
-                return null;
-            }
-        }
-        catch (ObjectDisposedException)
-        {
-            LogUtil.LogError("Discord client is disposed. Cannot create DM channel.", "GetOrCreateDMAsync");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            LogUtil.LogError($"Failed to create DM channel: {ex.Message}", "GetOrCreateDMAsync");
-            return null;
-        }
     }
 
     public static async Task RepostPKMAsShowdownAsync(this ISocketMessageChannel channel, IAttachment att, SocketUserMessage userMessage)
@@ -339,13 +277,10 @@ public static class ReusableActions
         {
             await File.WriteAllBytesAsync(tmpPath, pkm.DecryptedPartyData).ConfigureAwait(false);
 
-            // Ensure we don't open DMs too fast - enforce minimum delay between DMs
-            await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
-
             try
             {
                 // GetOrCreateDMAsync now handles rate limiting internally
-                var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+                var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
                 if (dm == null)
                 {
                     LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping send.", "SendPKMAsync");
@@ -353,14 +288,12 @@ public static class ReusableActions
                 }
 
                 const int maxRetries = 3;
-                int delayMs = 2500; // Increased from 1500ms
 
                 for (int attempt = 1; attempt <= maxRetries; attempt++)
                 {
                     try
                     {
                         await dm.SendFileAsync(tmpPath, msg).ConfigureAwait(false);
-                        _lastDmTime = DateTime.Now; // Update last DM time on success
                         await Task.Delay(750).ConfigureAwait(false); // Increased from 500ms for safer pacing
                         break; // success
                     }
@@ -375,7 +308,7 @@ public static class ReusableActions
                         LogUtil.LogError($"Opening DMs too fast! Waiting 5 seconds before retry. User: {user.Username} ({user.Id})", "SendPKMAsync");
 
                         // Remove cached DM channel to force recreation with proper delay
-                        _dmChannels.TryRemove(user.Id, out _);
+                        SysCordSettings.Manager.ClearDMChannelCache(user.Id);
 
                         if (attempt < maxRetries)
                         {
@@ -397,39 +330,51 @@ public static class ReusableActions
                             LogUtil.LogError($"Rate limited when DMing {user.Username} after {maxRetries} attempts", "SendPKMAsync");
                             break;
                         }
-
-                        LogUtil.LogInfo($"Rate limited sending DM to {user.Username}, waiting {delayMs}ms (attempt {attempt}/{maxRetries})", "SendPKMAsync");
-                        await Task.Delay(delayMs).ConfigureAwait(false);
-                        delayMs *= 2; // Exponential backoff
+                        int delay = int.Parse(ex.Response.Headers["Retry-After"] ?? "5000");
+                        await Task.Delay(delay).ConfigureAwait(false);
                     }
-                    catch (HttpException ex)
+                    catch (Exception ex)
                     {
+                        LogUtil.LogError($"Failed to send DM to {user.Username}: {ex.Message}", "SendPKMAsync");
                         if (attempt == maxRetries)
-                        {
-                            LogUtil.LogError($"Failed to DM {user.Username} after {maxRetries} attempts: {ex.Message}", "SendPKMAsync");
                             throw;
-                        }
-
-                        LogUtil.LogInfo($"Discord error sending DM to {user.Username}, retrying in {delayMs}ms (attempt {attempt}/{maxRetries})", "SendPKMAsync");
-                        await Task.Delay(delayMs).ConfigureAwait(false);
-                        delayMs *= 2;
+                        await Task.Delay(2000).ConfigureAwait(false);
                     }
                 }
             }
-            finally
+            catch (Exception ex)
             {
-                _dmRateLimiter.Release();
+                LogUtil.LogError($"Error in SendPKMAsync (DM): {ex.Message}", "SendPKMAsync");
             }
         }
         finally
         {
-            try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+            try
+            {
+                if (File.Exists(tmpPath))
+                    File.Delete(tmpPath);
+            }
+            catch (Exception ex)
+            {
+                LogUtil.LogError($"Error deleting temporary file: {ex.Message}", "SendPKMAsync");
+            }
         }
     }
 
-    public static string StripCodeBlock(string str) => str
-        .Replace("`\n", "")
-        .Replace("\n`", "")
-        .Replace("`", "")
-        .Trim();
+    public static string StripCodeBlock(string content)
+    {
+        if (content.StartsWith("```") && content.EndsWith("```"))
+        {
+            var firstLineEnd = content.IndexOf('\n');
+            if (firstLineEnd != -1)
+            {
+                content = content[(firstLineEnd + 1)..^3];
+            }
+            else
+            {
+                content = content[3..^3];
+            }
+        }
+        return content.Trim();
+    }
 }

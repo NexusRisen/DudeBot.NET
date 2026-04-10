@@ -4,77 +4,17 @@ using PKHeX.Core;
 using SysBot.Base;
 using SysBot.Pokemon.Helpers;
 using System;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord;
 
 public static class EmbedHelper
 {
-    // Rate limiter for DM operations to prevent "opening DMs too fast" errors
-    private static readonly SemaphoreSlim _dmRateLimiter = new(1, 1);
-    private static readonly ConcurrentDictionary<ulong, IDMChannel> _dmChannels = new();
-    private static DateTime _lastDmTime = DateTime.MinValue;
-    private const int MinDmDelayMs = 2000; // Minimum 2 seconds between DMs
-
-    private static async Task<IDMChannel?> GetOrCreateDMAsync(IUser user)
-    {
-        try
-        {
-            if (_dmChannels.TryGetValue(user.Id, out var channel))
-                return channel;
-
-            // Enforce minimum delay before creating a new DM channel to respect Discord rate limits
-            var timeSinceLastDm = DateTime.Now - _lastDmTime;
-            if (timeSinceLastDm.TotalMilliseconds < MinDmDelayMs)
-            {
-                var remainingDelay = MinDmDelayMs - (int)timeSinceLastDm.TotalMilliseconds;
-                await Task.Delay(remainingDelay).ConfigureAwait(false);
-            }
-
-            var dm = await user.CreateDMChannelAsync().ConfigureAwait(false);
-            _dmChannels[user.Id] = dm;
-            _lastDmTime = DateTime.Now;
-            return dm;
-        }
-        catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
-        {
-            LogUtil.LogError($"Opening DMs too fast when creating DM channel for user {user.Username} ({user.Id}). Waiting 5 seconds...", "GetOrCreateDMAsync");
-            await Task.Delay(5000).ConfigureAwait(false);
-
-            // Try one more time after the delay
-            try
-            {
-                var dm = await user.CreateDMChannelAsync().ConfigureAwait(false);
-                _dmChannels[user.Id] = dm;
-                _lastDmTime = DateTime.Now;
-                return dm;
-            }
-            catch (Exception retryEx)
-            {
-                LogUtil.LogError($"Failed to create DM channel after retry: {retryEx.Message}", "GetOrCreateDMAsync");
-                return null;
-            }
-        }
-        catch (ObjectDisposedException)
-        {
-            LogUtil.LogError("Discord client is disposed. Cannot create DM channel.", "GetOrCreateDMAsync");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            LogUtil.LogError($"Failed to create DM channel: {ex.Message}", "GetOrCreateDMAsync");
-            return null;
-        }
-    }
-
     public static async Task SendNotificationEmbedAsync(IUser user, string message)
     {
-        await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+            var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
             if (dm == null)
             {
                 LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping notification.", "SendNotificationEmbedAsync");
@@ -90,7 +30,6 @@ public static class EmbedHelper
                 .Build();
 
             await dm.SendMessageAsync(embed: embed).ConfigureAwait(false);
-            _lastDmTime = DateTime.Now;
         }
         catch (ObjectDisposedException)
         {
@@ -99,24 +38,19 @@ public static class EmbedHelper
         catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
         {
             LogUtil.LogError($"Opening DMs too fast! User: {user.Username} ({user.Id})", "SendNotificationEmbedAsync");
-            _dmChannels.TryRemove(user.Id, out _);
+            SysCordSettings.Manager.ClearDMChannelCache(user.Id);
         }
         catch (Exception ex)
         {
             LogUtil.LogError($"Error sending notification embed: {ex.Message}", "SendNotificationEmbedAsync");
         }
-        finally
-        {
-            _dmRateLimiter.Release();
-        }
     }
 
     public static async Task SendTradeCanceledEmbedAsync(IUser user, string reason)
     {
-        await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+            var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
             if (dm == null)
             {
                 LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping trade canceled message.", "SendTradeCanceledEmbedAsync");
@@ -132,7 +66,6 @@ public static class EmbedHelper
                 .Build();
 
             await dm.SendMessageAsync(embed: embed).ConfigureAwait(false);
-            _lastDmTime = DateTime.Now;
         }
         catch (ObjectDisposedException)
         {
@@ -141,24 +74,19 @@ public static class EmbedHelper
         catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
         {
             LogUtil.LogError($"Opening DMs too fast! User: {user.Username} ({user.Id})", "SendTradeCanceledEmbedAsync");
-            _dmChannels.TryRemove(user.Id, out _);
+            SysCordSettings.Manager.ClearDMChannelCache(user.Id);
         }
         catch (Exception ex)
         {
             LogUtil.LogError($"Error sending trade canceled embed: {ex.Message}", "SendTradeCanceledEmbedAsync");
         }
-        finally
-        {
-            _dmRateLimiter.Release();
-        }
     }
 
     public static async Task SendTradeCodeEmbedAsync(IUser user, int code)
     {
-        await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+            var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
             if (dm == null)
             {
                 LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping trade code message.", "SendTradeCodeEmbedAsync");
@@ -174,7 +102,6 @@ public static class EmbedHelper
                 .Build();
 
             await dm.SendMessageAsync(embed: embed).ConfigureAwait(false);
-            _lastDmTime = DateTime.Now;
         }
         catch (ObjectDisposedException)
         {
@@ -183,15 +110,11 @@ public static class EmbedHelper
         catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
         {
             LogUtil.LogError($"Opening DMs too fast! User: {user.Username} ({user.Id})", "SendTradeCodeEmbedAsync");
-            _dmChannels.TryRemove(user.Id, out _);
+            SysCordSettings.Manager.ClearDMChannelCache(user.Id);
         }
         catch (Exception ex)
         {
             LogUtil.LogError($"Error sending trade code embed: {ex.Message}", "SendTradeCodeEmbedAsync");
-        }
-        finally
-        {
-            _dmRateLimiter.Release();
         }
     }
 
@@ -233,10 +156,9 @@ public static class EmbedHelper
 
     public static async Task SendTradeInitializingEmbedAsync(IUser user, string speciesName, int code, bool isMysteryEgg, string? message = null)
     {
-        await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+            var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
             if (dm == null)
             {
                 LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping trade initializing message.", "SendTradeInitializingEmbedAsync");
@@ -262,7 +184,6 @@ public static class EmbedHelper
 
             var builtEmbed = embed.Build();
             await dm.SendMessageAsync(embed: builtEmbed).ConfigureAwait(false);
-            _lastDmTime = DateTime.Now;
         }
         catch (ObjectDisposedException)
         {
@@ -271,24 +192,19 @@ public static class EmbedHelper
         catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
         {
             LogUtil.LogError($"Opening DMs too fast! User: {user.Username} ({user.Id})", "SendTradeInitializingEmbedAsync");
-            _dmChannels.TryRemove(user.Id, out _);
+            SysCordSettings.Manager.ClearDMChannelCache(user.Id);
         }
         catch (Exception ex)
         {
             LogUtil.LogError($"Error sending trade initializing embed: {ex.Message}", "SendTradeInitializingEmbedAsync");
         }
-        finally
-        {
-            _dmRateLimiter.Release();
-        }
     }
 
     public static async Task SendTradeSearchingEmbedAsync(IUser user, string trainerName, string inGameName, string? message = null)
     {
-        await _dmRateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            var dm = await GetOrCreateDMAsync(user).ConfigureAwait(false);
+            var dm = await SysCordSettings.Manager.GetOrCreateDMAsync(user).ConfigureAwait(false);
             if (dm == null)
             {
                 LogUtil.LogError($"Could not create DM channel for user {user.Username} ({user.Id}). Skipping trade searching message.", "SendTradeSearchingEmbedAsync");
@@ -309,7 +225,6 @@ public static class EmbedHelper
 
             var builtEmbed = embed.Build();
             await dm.SendMessageAsync(embed: builtEmbed).ConfigureAwait(false);
-            _lastDmTime = DateTime.Now;
         }
         catch (ObjectDisposedException)
         {
@@ -318,15 +233,11 @@ public static class EmbedHelper
         catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
         {
             LogUtil.LogError($"Opening DMs too fast! User: {user.Username} ({user.Id})", "SendTradeSearchingEmbedAsync");
-            _dmChannels.TryRemove(user.Id, out _);
+            SysCordSettings.Manager.ClearDMChannelCache(user.Id);
         }
         catch (Exception ex)
         {
             LogUtil.LogError($"Error sending trade searching embed: {ex.Message}", "SendTradeSearchingEmbedAsync");
-        }
-        finally
-        {
-            _dmRateLimiter.Release();
         }
     }
 }
