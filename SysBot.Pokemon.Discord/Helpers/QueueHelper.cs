@@ -305,7 +305,7 @@ public static class QueueHelper<T> where T : PKM, new()
         return new TradeQueueResult(true);
     }
 
-    public static async Task AddBatchContainerToQueueAsync(SocketCommandContext context, int code, string trainer, T firstTrade, List<T> allTrades, RequestSignificance sig, SocketUser trader, int totalBatchTrades)
+    public static async Task AddBatchContainerToQueueAsync(SocketCommandContext context, int code, string trainer, T firstTrade, List<T> allTrades, RequestSignificance sig, SocketUser trader, int totalBatchTrades, bool ignoreAutoOT = false, bool isHiddenTrade = false)
     {
         var userID = trader.Id;
         var name = trader.Username;
@@ -315,7 +315,7 @@ public static class QueueHelper<T> where T : PKM, new()
         int uniqueTradeID = GenerateUniqueTradeID();
 
         var detail = new PokeTradeDetail<T>(firstTrade, trainer_info, notifier, PokeTradeType.Batch, code,
-            sig == RequestSignificance.Favored, null, 1, totalBatchTrades, false)
+            sig == RequestSignificance.Favored, null, 1, totalBatchTrades, false, isHiddenTrade, 0, ignoreAutoOT)
         {
             BatchTrades = allTrades
         };

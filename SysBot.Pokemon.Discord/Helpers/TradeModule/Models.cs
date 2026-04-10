@@ -22,6 +22,18 @@ public class BatchTradeError
     public string ShowdownSet { get; set; } = "";
 }
 
+public class BatchTradeResult<T> where T : PKM, new()
+{
+    public List<T> Pokemon { get; set; }
+    public List<BatchTradeError> Errors { get; set; }
+
+    public BatchTradeResult(List<T> pokemon, List<BatchTradeError> errors)
+    {
+        Pokemon = pokemon;
+        Errors = errors;
+    }
+}
+
 public class OriginalPokemonValues
 {
     public bool Shiny { get; set; }

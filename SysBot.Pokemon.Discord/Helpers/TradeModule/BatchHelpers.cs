@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Commands;
 using PKHeX.Core;
+using SysBot.Pokemon.Discord.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,6 +62,113 @@ public static class BatchHelpers<T> where T : PKM, new()
 
         var replyMessage = await context.Channel.SendMessageAsync(embed: embed.Build());
         _ = Helpers<T>.DeleteMessagesAfterDelayAsync(replyMessage, context.Message, 20);
+    }
+
+    public static async Task<BatchTradeResult<T>> ProcessAttachmentsForBatch(SocketCommandContext context)
+    {
+        var pokemonList = new List<T>();
+        var errors = new List<BatchTradeError>();
+        var attachments = context.Message.Attachments;
+
+        if (attachments == null || !attachments.Any())
+            return new BatchTradeResult<T>(pokemonList, errors);
+
+        int tradeIndex = 1;
+        foreach (var attachment in attachments)
+        {
+            try
+            {
+                if (attachment.Filename.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    var textResult = await ProcessTextFileForBatch(attachment, tradeIndex).ConfigureAwait(false);
+                    pokemonList.AddRange(textResult.Pokemon);
+                    errors.AddRange(textResult.Errors);
+                    tradeIndex += textResult.Pokemon.Count + textResult.Errors.Count;
+                }
+                else
+                {
+                    var att = await NetUtil.DownloadPKMAsync(attachment).ConfigureAwait(false);
+                    var pk = Helpers<T>.GetRequest(att);
+
+                    if (pk != null)
+                    {
+                        pokemonList.Add(pk);
+                    }
+                    else
+                    {
+                        errors.Add(new BatchTradeError
+                        {
+                            TradeNumber = tradeIndex,
+                            SpeciesName = attachment.Filename,
+                            ErrorMessage = "Attachment is not a valid Pokémon file or compatible text file."
+                        });
+                    }
+                    tradeIndex++;
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add(new BatchTradeError
+                {
+                    TradeNumber = tradeIndex,
+                    SpeciesName = attachment.Filename,
+                    ErrorMessage = $"Error downloading or processing: {ex.Message}"
+                });
+                tradeIndex++;
+            }
+        }
+
+        return new BatchTradeResult<T>(pokemonList, errors);
+    }
+
+    private static async Task<BatchTradeResult<T>> ProcessTextFileForBatch(IAttachment attachment, int startIndex)
+    {
+        var pokemonList = new List<T>();
+        var errors = new List<BatchTradeError>();
+
+        try
+        {
+            using var client = new System.Net.Http.HttpClient();
+            var content = await client.GetStringAsync(attachment.Url).ConfigureAwait(false);
+            
+            content = BatchNormalizer.NormalizeBatchCommands(content);
+            content = ReusableActions.StripCodeBlock(content);
+            var trades = ParseBatchTradeContent(content);
+
+            for (int i = 0; i < trades.Count; i++)
+            {
+                var (pk, error, set, legalizationHint) = await ProcessSingleTradeForBatch(trades[i]);
+                if (pk != null)
+                {
+                    pokemonList.Add(pk);
+                }
+                else
+                {
+                    var speciesName = set != null && set.Species > 0
+                        ? GameInfo.Strings.Species[set.Species]
+                        : "Unknown";
+                    errors.Add(new BatchTradeError
+                    {
+                        TradeNumber = startIndex + i,
+                        SpeciesName = speciesName,
+                        ErrorMessage = error ?? "Unknown error",
+                        LegalizationHint = legalizationHint,
+                        ShowdownSet = set != null ? string.Join("\n", set.GetSetLines()) : trades[i]
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new BatchTradeError
+            {
+                TradeNumber = startIndex,
+                SpeciesName = attachment.Filename,
+                ErrorMessage = $"Failed to process text file: {ex.Message}"
+            });
+        }
+
+        return new BatchTradeResult<T>(pokemonList, errors);
     }
 
     public static async Task ProcessBatchContainer(SocketCommandContext context, List<T> batchPokemonList,

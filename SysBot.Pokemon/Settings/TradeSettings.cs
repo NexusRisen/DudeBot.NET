@@ -111,11 +111,11 @@ public class TradeSettings : IBotStateSettings, ICountSettings
         [Category("BatchTradeConfig"), Description("Toggle to allow or disallow batch trades."), DisplayName("Allow Batch Trades")]
         public bool AllowBatchTrades { get; set; } = true;
 
-        private int _maxPkmsPerTrade = 3;
-        [Category("BatchTradeConfig"), Description("Maximum Pokémon per trade. Batch mode will default to 3 if this configuration is less than 1. No upper limit, mind your queues."), DisplayName("Maximum Pokémon per Trade")]
+        private int _maxPkmsPerTrade = 10;
+        [Category("BatchTradeConfig"), Description("Maximum Pokémon per trade. Batch mode will default to 10 if this configuration is less than 1. No upper limit, mind your queues."), DisplayName("Maximum Pokémon per Trade")]
         public int MaxPkmsPerTrade
         {
-            get => _maxPkmsPerTrade < 1 ? 3 : _maxPkmsPerTrade;
+            get => _maxPkmsPerTrade < 1 ? 10 : _maxPkmsPerTrade;
             set => _maxPkmsPerTrade = value;
         }
 
