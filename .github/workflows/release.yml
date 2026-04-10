@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore SysBot.NET.sln
+
+    - name: Build and Publish
+      run: |
+        dotnet publish SysBot.Pokemon.WinForms/SysBot.Pokemon.WinForms.csproj -c Release -r win-${{ matrix.arch }} --self-contained false -p:PublishSingleFile=true -o ./publish/win-${{ matrix.arch }}
+
+    - name: Zip Release
+      shell: pwsh
+      run: |
+        Compress-Archive -Path ./publish/win-${{ matrix.arch }}/* -DestinationPath ./DudeBot-win-${{ matrix.arch }}.zip
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DudeBot-win-${{ matrix.arch }}
+        path: ./DudeBot-win-${{ matrix.arch }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          artifacts/DudeBot-win-x64/DudeBot-win-x64.zip
+          artifacts/DudeBot-win-x86/DudeBot-win-x86.zip
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
