@@ -196,23 +196,51 @@ public static class DetailsExtractor<T> where T : PKM, new()
         for (int i = 0; i < displayOrder.Length; i++)
         {
             int idx = displayOrder[i];
-            ivStrings.Add($"{ivs[idx]} {labels[i]}");
+            int ivValue = ivs[idx];
+            string label = labels[i];
+            
+            bool isHT = false;
+            if (pk is IHyperTrain ht)
+            {
+                isHT = idx switch
+                {
+                    0 => ht.HT_HP,
+                    1 => ht.HT_ATK,
+                    2 => ht.HT_DEF,
+                    3 => ht.HT_SPE,
+                    4 => ht.HT_SPA,
+                    5 => ht.HT_SPD,
+                    _ => false
+                };
+            }
+
+            ivStrings.Add($"{ivValue}{(isHT ? " (HT)" : "")} {label}");
         }
 
         // Compose final display
         string ivsDisplay = perfectIVCount == 6 ? "6IV" : string.Join(" / ", ivStrings);
         embedData.IVsDisplay = ivsDisplay;
 
-
         int[] evs = GetEVs(pk);
-        embedData.EVsDisplay = string.Join(" / ", new[] {
-            (evs[0] != 0 ? $"{evs[0]} HP" : ""),
-            (evs[1] != 0 ? $"{evs[1]} Atk" : ""),
-            (evs[2] != 0 ? $"{evs[2]} Def" : ""),
-            (evs[4] != 0 ? $"{evs[4]} SpA" : ""),
-            (evs[5] != 0 ? $"{evs[5]} SpD" : ""),
-            (evs[3] != 0 ? $"{evs[3]} Spe" : "")
-        }.Where(s => !string.IsNullOrEmpty(s)));
+        var evLabels = new[] { "HP", "Atk", "Def", "Spe", "SpA", "SpD" };
+        var activeEVs = new List<string>();
+        for (int i = 0; i < 6; i++)
+        {
+            // Map PKHeX order to display order: HP / Atk / Def / SpA / SpD / Spe
+            int idx = i switch
+            {
+                0 => 0, // HP
+                1 => 1, // Atk
+                2 => 2, // Def
+                3 => 4, // SpA
+                4 => 5, // SpD
+                5 => 3, // Spe
+                _ => 0
+            };
+            if (evs[idx] > 0)
+                activeEVs.Add($"{evs[idx]} {evLabels[idx]}");
+        }
+        embedData.EVsDisplay = activeEVs.Count > 0 ? string.Join(" / ", activeEVs) : "None";
         embedData.MetDate = pk.MetDate.ToString();
         embedData.MetLevel = pk.MetLevel;
         var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
@@ -230,30 +258,8 @@ public static class DetailsExtractor<T> where T : PKM, new()
 
     private static int CalculateMedals(int tradeCount)
     {
-        int medals = 0;
-        if (tradeCount >= 1) medals++;
-        if (tradeCount >= 50) medals++;
-        if (tradeCount >= 100) medals++;
-        if (tradeCount >= 150) medals++;
-        if (tradeCount >= 200) medals++;
-        if (tradeCount >= 250) medals++;
-        if (tradeCount >= 300) medals++;
-        if (tradeCount >= 350) medals++;
-        if (tradeCount >= 400) medals++;
-        if (tradeCount >= 450) medals++;
-        if (tradeCount >= 500) medals++;
-        if (tradeCount >= 550) medals++;
-        if (tradeCount >= 600) medals++;
-        if (tradeCount >= 650) medals++;
-        if (tradeCount >= 700) medals++;
-        if (tradeCount >= 750) medals++;
-        if (tradeCount >= 800) medals++;
-        if (tradeCount >= 850) medals++;
-        if (tradeCount >= 900) medals++;
-        if (tradeCount >= 950) medals++;
-        if (tradeCount >= 1000) medals++;
-        // Add more milestones if necessary
-        return medals;
+        if (tradeCount < 1) return 0;
+        return 1 + Math.Min(20, tradeCount / 50); // 1 for >= 1, then +1 for every 50 up to 1000
     }
 
     /// <summary>
@@ -422,32 +428,56 @@ public static class DetailsExtractor<T> where T : PKM, new()
 
     private static string GetSpecialSymbols(T pk)
     {
-        string alphaMarkSymbol = string.Empty;
-        string mightyMarkSymbol = string.Empty;
-        string markTitle = string.Empty;
+        var settings = SysCord<T>.Runner.Config.Trade.TradeEmbedSettings;
+        var symbols = new List<string>();
+
+        // Shiny status
+        if (pk.IsShiny)
+        {
+            symbols.Add(pk.ShinyXor == 0 ? "◼ " : "★ ");
+        }
+
+        // Alpha status (PLA/LA)
+        if (pk is IAlpha alpha && alpha.IsAlpha)
+        {
+            symbols.Add(settings.AlphaPLAEmoji.EmojiString);
+        }
+
+        // Marks & Ribbons (Gen 9+)
         if (pk is IRibbonSetMark9 ribbonSetMark)
         {
-            alphaMarkSymbol = ribbonSetMark.RibbonMarkAlpha ? SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.AlphaMarkEmoji.EmojiString : string.Empty;
-            mightyMarkSymbol = ribbonSetMark.RibbonMarkMightiest ? SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.MightiestMarkEmoji.EmojiString : string.Empty;
+            if (ribbonSetMark.RibbonMarkMightiest)
+                symbols.Add(settings.MightiestMarkEmoji.EmojiString);
+            if (ribbonSetMark.RibbonMarkAlpha)
+                symbols.Add(settings.AlphaMarkEmoji.EmojiString);
         }
-        if (pk is IRibbonIndex ribbonIndex)
-        {
-            TradeExtensions<T>.HasMark(ribbonIndex, out RibbonIndex result, out markTitle);
-        }
-        string alphaSymbol = (pk is IAlpha alpha && alpha.IsAlpha) ? SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.AlphaPLAEmoji.EmojiString : string.Empty;
-        string shinySymbol = pk.ShinyXor == 0 ? "◼ " : pk.IsShiny ? "★ " : string.Empty;
-        string genderSymbol = GameInfo.GenderSymbolASCII[pk.Gender];
-        string maleEmojiString = SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.MaleEmoji.EmojiString;
-        string femaleEmojiString = SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.FemaleEmoji.EmojiString;
-        string displayGender = genderSymbol switch
-        {
-            "M" => !string.IsNullOrEmpty(maleEmojiString) ? maleEmojiString : "(M) ",
-            "F" => !string.IsNullOrEmpty(femaleEmojiString) ? femaleEmojiString : "(F) ",
-            _ => ""
-        };
-        string mysteryGiftEmoji = pk.FatefulEncounter ? SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.MysteryGiftEmoji.EmojiString : "";
 
-        return shinySymbol + alphaSymbol + mightyMarkSymbol + alphaMarkSymbol + mysteryGiftEmoji + displayGender + (!string.IsNullOrEmpty(markTitle) ? $"{markTitle} " : "");
+        // Common Marks/Titles
+        if (pk is IRibbonIndex ribbonIndex && TradeExtensions<T>.HasMark(ribbonIndex, out _, out string markTitle))
+        {
+            symbols.Add(markTitle.Trim());
+        }
+
+        // Fateful Encounter (Mystery Gift)
+        if (pk.FatefulEncounter)
+        {
+            symbols.Add(settings.MysteryGiftEmoji.EmojiString);
+        }
+
+        // Gender symbols
+        string genderSymbol = GameInfo.GenderSymbolASCII[pk.Gender];
+        string genderEmoji = genderSymbol switch
+        {
+            "M" => settings.MaleEmoji.EmojiString ?? "(M) ",
+            "F" => settings.FemaleEmoji.EmojiString ?? "(F) ",
+            _ => string.Empty
+        };
+        if (!string.IsNullOrEmpty(genderEmoji))
+        {
+            symbols.Add(genderEmoji);
+        }
+
+        return string.Join(" ", symbols.Where(s => !string.IsNullOrWhiteSpace(s))) + (symbols.Count > 0 ? " " : "");
     }
 
     private static string GetTeraTypeString(PK9 pk9)

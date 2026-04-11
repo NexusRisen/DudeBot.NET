@@ -92,12 +92,11 @@ public static class AutoLegalityWrapper
 
         // Seed the Trainer Database with enough fake save files so that we return a generation sensitive format when needed.  
         var fallback = GetDefaultTrainer(cfg);
-        for (byte generation = 1; generation <= GameUtil.get_Generation(GameVersion.Gen9); generation++)
+        for (byte generation = 1; generation <= GameUtil.GetGeneration(GameVersion.Gen9); generation++)
         {
             // Convert the byte generation into an EntityContext via a representative GameVersion for that generation
             var representativeVersion = GameUtil.GetVersion(generation);
-            var context = GameUtil.GetContextFromSaved(representativeVersion);
-            var versions = GameUtil.GetVersionsInGeneration(context, GameVersion.Any);
+            var versions = GameUtil.GetVersionsInGeneration(generation, GameVersion.Any);
             foreach (var version in versions)
                 RegisterIfNoneExist(fallback, generation, version);
         }
@@ -133,7 +132,7 @@ public static class AutoLegalityWrapper
             Generation = generation,
         };
         // Pass the version as the second argument and the fallback as the third to match the overload
-        var exist = TrainerSettings.GetSavedTrainerData(GameUtil.GetContextFromSaved(version), version, fallback);
+        var exist = TrainerSettings.GetSavedTrainerData(version.GetContext(), version, fallback);
         if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
             TrainerSettings.Register(fallback);
     }
@@ -197,7 +196,7 @@ public static class AutoLegalityWrapper
     {
         // Convert the numeric generation into a representative GameVersion, then to an EntityContext
         var representativeVersion = GameUtil.GetVersion(gen);
-        var context = GameUtil.GetContextFromSaved(representativeVersion);
+        var context = representativeVersion.GetContext();
         return TrainerSettings.GetSavedTrainerData(context);
     }
 
