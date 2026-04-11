@@ -41,7 +41,17 @@ public static class DetailsExtractor<T> where T : PKM, new()
         // Column 1: Core Attributes
         var attrList = new List<string>();
         if (settings.ShowBall) attrList.Add($"**Ball:** {embedData.Ball}");
-        if (settings.ShowNature) attrList.Add($"**Nature:** {embedData.Nature}{(string.IsNullOrEmpty(embedData.StatNature) ? "" : $" ({embedData.StatNature})")}");
+        if (settings.ShowNature)
+        {
+            string natureDisplay = $"**Nature:** {embedData.Nature}";
+            if (!string.IsNullOrEmpty(embedData.StatNature))
+            {
+                // In PLZA, Nature is the PID-based nature, and StatNature is the minted/intended nature.
+                // We display it as: IntendedNature (Minted from: PIDNature)
+                natureDisplay = $"**Nature:** {embedData.StatNature} (Minted from: {embedData.Nature})";
+            }
+            attrList.Add(natureDisplay);
+        }
         if (settings.ShowAbility) attrList.Add($"**Ability:** {embedData.Ability}");
         if (settings.ShowLanguage) attrList.Add($"**Lang:** {embedData.Language}");
         
