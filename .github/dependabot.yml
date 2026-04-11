@@ -1,0 +1,56 @@
+version: 2
+updates:
+  # Base Logic
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Base"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+
+  # Pokemon Logic
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+
+  # Discord Bot
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.Discord"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+
+  # WinForms App
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.WinForms"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+
+  # Console App
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.ConsoleApp"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+
+  # Twitch/YouTube/Z3
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.Twitch"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.YouTube"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "nuget"
+    directory: "/SysBot.Pokemon.Z3"
+    schedule:
+      interval: "daily"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
