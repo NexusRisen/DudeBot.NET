@@ -316,16 +316,16 @@ namespace SysBot.Pokemon.WinForms
             P_Bottom.Controls.Add(PB_Logo);
             P_Bottom.Controls.Add(L_Version);
             P_Bottom.Dock = DockStyle.Bottom;
-            P_Bottom.Location = new Point(180, 511);
+            P_Bottom.Location = new Point(0, 511);
             P_Bottom.Name = "P_Bottom";
-            P_Bottom.Size = new Size(670, 50);
+            P_Bottom.Size = new Size(850, 50);
             P_Bottom.TabIndex = 2;
             // 
             // PB_Logo
             // 
             PB_Logo.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             PB_Logo.Image = Resources.icon.ToBitmap();
-            PB_Logo.Location = new Point(625, 9);
+            PB_Logo.Location = new Point(803, 9);
             PB_Logo.Name = "PB_Logo";
             PB_Logo.Size = new Size(32, 32);
             PB_Logo.SizeMode = PictureBoxSizeMode.Zoom;
@@ -336,7 +336,7 @@ namespace SysBot.Pokemon.WinForms
             // 
             L_Version.Anchor = AnchorStyles.Left;
             L_Version.AutoSize = true;
-            L_Version.Location = new Point(15, 18);
+            L_Version.Location = new Point(15, 17);
             L_Version.Name = "L_Version";
             L_Version.Size = new Size(82, 15);
             L_Version.TabIndex = 0;
@@ -520,9 +520,9 @@ namespace SysBot.Pokemon.WinForms
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(850, 561);
             Controls.Add(TC_Main);
-            Controls.Add(P_Bottom);
             Controls.Add(P_Header);
             Controls.Add(P_Sidebar);
+            Controls.Add(P_Bottom);
             Font = new Font("Segoe UI", 9F);
             Icon = Resources.icon;
             MinimumSize = new Size(866, 600);

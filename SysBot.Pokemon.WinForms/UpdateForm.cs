@@ -13,9 +13,10 @@ namespace SysBot.Pokemon.WinForms
         private Button buttonDownload = null!;
         private Label labelUpdateInfo = null!;
         private readonly Label labelChangelogTitle = new();
-        private TextBox textBoxChangelog = null!;
+        private RichTextBox textBoxChangelog = null!;
         private ProgressBar progressBarDownload = null!;
         private Label labelProgress = null!;
+        private Button buttonCopy = null!;
         private readonly bool isUpdateRequired;
         private readonly bool isUpdateAvailable;
         private readonly string newVersion;
@@ -38,7 +39,10 @@ namespace SysBot.Pokemon.WinForms
             {
                 labelUpdateInfo.ForeColor = Color.FromArgb(255, 100, 100); // Re-apply alert color after theme
             }
-            Load += async (sender, e) => await FetchAndDisplayChangelog();
+            Load += async (sender, e) => {
+                await FetchAndDisplayChangelog();
+                labelChangelogTitle.Focus(); // Move focus away from the textbox to prevent auto-selection
+            };
             UpdateFormText();
         }
 
@@ -48,12 +52,13 @@ namespace SysBot.Pokemon.WinForms
             buttonDownload = new Button { Name = "ButtonUpdate" };
             progressBarDownload = new ProgressBar();
             labelProgress = new Label();
-            textBoxChangelog = new TextBox();
+            textBoxChangelog = new RichTextBox();
+            buttonCopy = new Button();
 
             SuspendLayout();
 
             // Form Settings
-            ClientSize = new Size(520, 400);
+            ClientSize = new Size(520, 450);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -64,6 +69,7 @@ namespace SysBot.Pokemon.WinForms
             labelUpdateInfo.AutoSize = false;
             labelUpdateInfo.Location = new Point(15, 15);
             labelUpdateInfo.Size = new Size(490, 50);
+            labelUpdateInfo.Font = new Font("Segoe UI", 9.5F);
             labelUpdateInfo.TextAlign = ContentAlignment.MiddleLeft;
             if (isUpdateRequired)
             {
@@ -85,37 +91,58 @@ namespace SysBot.Pokemon.WinForms
             labelChangelogTitle.AutoSize = true;
             labelChangelogTitle.Location = new Point(15, 75);
             labelChangelogTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            labelChangelogTitle.Text = $"Changelog ({newVersion}):";
+            labelChangelogTitle.Text = $"Release Notes ({newVersion}):";
 
             // textBoxChangelog
-            textBoxChangelog.Multiline = true;
             textBoxChangelog.ReadOnly = true;
-            textBoxChangelog.ScrollBars = ScrollBars.Vertical;
+            textBoxChangelog.ScrollBars = RichTextBoxScrollBars.Vertical;
             textBoxChangelog.Location = new Point(15, 100);
-            textBoxChangelog.Size = new Size(490, 180);
+            textBoxChangelog.Size = new Size(490, 220);
             textBoxChangelog.BackColor = Color.FromArgb(20, 20, 20);
-            textBoxChangelog.ForeColor = Color.LightGray;
-            textBoxChangelog.BorderStyle = BorderStyle.FixedSingle;
+            textBoxChangelog.ForeColor = Color.Gainsboro;
+            textBoxChangelog.BorderStyle = BorderStyle.None;
+            textBoxChangelog.Font = new Font("Consolas", 9F);
+            // Prevent selection highlighting on click by capturing the Enter event
+            textBoxChangelog.Enter += (s, e) => { labelChangelogTitle.Focus(); };
+
+            // buttonCopy
+            buttonCopy.Size = new Size(60, 25);
+            buttonCopy.Location = new Point(445, 72);
+            buttonCopy.FlatStyle = FlatStyle.Flat;
+            buttonCopy.FlatAppearance.BorderSize = 0;
+            buttonCopy.BackColor = Color.FromArgb(45, 45, 45);
+            buttonCopy.ForeColor = Color.Silver;
+            buttonCopy.Font = new Font("Segoe UI", 8F);
+            buttonCopy.Text = "Copy";
+            buttonCopy.Click += (s, e) => {
+                if (!string.IsNullOrEmpty(textBoxChangelog.Text))
+                {
+                    Clipboard.SetText(textBoxChangelog.Text);
+                    buttonCopy.Text = "Copied!";
+                    Task.Delay(2000).ContinueWith(_ => Invoke(() => buttonCopy.Text = "Copy"));
+                }
+            };
 
             // progressBarDownload
-            progressBarDownload.Location = new Point(15, 295);
+            progressBarDownload.Location = new Point(15, 335);
             progressBarDownload.Size = new Size(410, 23);
             progressBarDownload.Visible = false;
 
             // labelProgress
             labelProgress.AutoSize = true;
-            labelProgress.Location = new Point(435, 298);
+            labelProgress.Location = new Point(435, 338);
             labelProgress.Size = new Size(50, 20);
             labelProgress.Text = "0%";
             labelProgress.Visible = false;
 
             // buttonDownload
-            buttonDownload.Size = new Size(180, 35);
-            buttonDownload.Location = new Point(170, 340);
+            buttonDownload.Size = new Size(180, 40);
+            buttonDownload.Location = new Point(170, 385);
             buttonDownload.FlatStyle = FlatStyle.Flat;
             buttonDownload.FlatAppearance.BorderSize = 1;
             buttonDownload.FlatAppearance.BorderColor = LightGrey;
             buttonDownload.BackColor = Color.FromArgb(50, 50, 50);
+            buttonDownload.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
             if (string.IsNullOrEmpty(buttonDownload.Text))
             {
                 buttonDownload.Text = "Download Update";
@@ -125,6 +152,7 @@ namespace SysBot.Pokemon.WinForms
             Controls.Add(labelUpdateInfo);
             Controls.Add(labelChangelogTitle);
             Controls.Add(textBoxChangelog);
+            Controls.Add(buttonCopy);
             Controls.Add(progressBarDownload);
             Controls.Add(labelProgress);
             Controls.Add(buttonDownload);

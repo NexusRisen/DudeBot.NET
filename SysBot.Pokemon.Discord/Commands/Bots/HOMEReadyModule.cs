@@ -247,8 +247,8 @@ namespace SysBot.Pokemon.Discord.Modules
             }
 
             var filtered = files
-                .Where(f => string.IsNullOrWhiteSpace(filter) ||
-                            f.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .Where(f => f != null && (string.IsNullOrWhiteSpace(filter) ||
+                            f.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             if (filtered.Count == 0)

@@ -52,7 +52,7 @@ namespace SysBot.Pokemon
         /// <summary> Indicates if the trade data is currently being traded. </summary>
         public bool IsProcessing;
 
-        public List<Pictocodes> LGPETradeCode;
+        public List<Pictocodes>? LGPETradeCode;
 
         public readonly int BatchTradeNumber;
 
