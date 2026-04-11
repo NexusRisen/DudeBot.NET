@@ -52,6 +52,9 @@ public static class DetailsExtractor<T> where T : PKM, new()
         if (settings.ShowIVs) statsList.Add($"**IVs:** {embedData.IVsDisplay}");
         if (settings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay)) statsList.Add($"**EVs:** {embedData.EVsDisplay}");
 
+        // Column 3: Moves
+        string movesContent = embedData.MovesDisplay;
+
         string speciesHeader = $"{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}";
         embedBuilder.WithTitle(speciesHeader);
 
@@ -61,12 +64,27 @@ public static class DetailsExtractor<T> where T : PKM, new()
         if (statsList.Count > 0)
             embedBuilder.AddField("Stats", string.Join("\n", statsList), true);
 
-        embedBuilder.AddField("Moves", embedData.MovesDisplay, true);
+        if (!string.IsNullOrEmpty(movesContent))
+            embedBuilder.AddField("Moves", movesContent, true);
 
+        // Additional Information (Met, Scale, etc.)
+        var additionalInfo = new List<string>();
+        if (settings.ShowMetLevel) additionalInfo.Add($"**Met Level:** {embedData.MetLevel}");
+        if (settings.ShowMetDate) additionalInfo.Add($"**Met Date:** {embedData.MetDate}");
+        if (settings.ShowMetLocation) additionalInfo.Add($"**Met Location:** {embedData.MetLocation}");
+        
         if (pk.Version is GameVersion.PLA or GameVersion.SL or GameVersion.VL && settings.ShowScale)
+            additionalInfo.Add($"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})");
+
+        if (additionalInfo.Count > 0)
         {
-            embedBuilder.AddField("Physical", $"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})", false);
+            embedBuilder.AddField("Origin & Physical", string.Join(" | ", additionalInfo), false);
         }
+        
+        // Add User mention at the end or in a footer? 
+        // Upstream had it at the start of leftSideContent.
+        // Let's add it as a field or description if needed.
+        embedBuilder.WithDescription($"**User:** {trainerMention}");
     }
 
 
@@ -197,6 +215,8 @@ public static class DetailsExtractor<T> where T : PKM, new()
         }.Where(s => !string.IsNullOrEmpty(s)));
         embedData.MetDate = pk.MetDate.ToString();
         embedData.MetLevel = pk.MetLevel;
+        var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
+        embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"**ID:** {pk.MetLocation}" : $"{metLocationName} **(ID: {pk.MetLocation})**";
         embedData.MovesDisplay = string.Join("\n", embedData.Moves);
         embedData.PokemonDisplayName = pk.IsNicknamed ? pk.Nickname : embedData.SpeciesName;
 
@@ -226,6 +246,12 @@ public static class DetailsExtractor<T> where T : PKM, new()
         if (tradeCount >= 600) medals++;
         if (tradeCount >= 650) medals++;
         if (tradeCount >= 700) medals++;
+        if (tradeCount >= 750) medals++;
+        if (tradeCount >= 800) medals++;
+        if (tradeCount >= 850) medals++;
+        if (tradeCount >= 900) medals++;
+        if (tradeCount >= 950) medals++;
+        if (tradeCount >= 1000) medals++;
         // Add more milestones if necessary
         return medals;
     }
@@ -500,6 +526,9 @@ public class EmbedData
 
     /// <summary>Met level.</summary>
     public byte MetLevel { get; set; }
+
+    /// <summary>Met location name.</summary>
+    public string? MetLocation { get; set; }
 
     /// <summary>List of move names.</summary>
     public List<string>? Moves { get; set; }

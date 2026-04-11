@@ -152,6 +152,7 @@ public class TradeSettings : IBotStateSettings, ICountSettings
                 ShowBall = false;
                 ShowMetLevel = false;
                 ShowMetDate = false;
+                ShowMetLocation = false;
                 ShowAbility = false;
                 ShowNature = false;
                 ShowIVs = false;
@@ -254,6 +255,9 @@ public class TradeSettings : IBotStateSettings, ICountSettings
 
         [Category(EmbedSettings), Description("Will show MetDate in trade embed (Discord only)."), DisplayName("Show Met Date")]
         public bool ShowMetDate { get; set; } = true;
+
+        [Category(EmbedSettings), Description("Will show Met Location in trade embed (Discord only)."), DisplayName("Show Met Location")]
+        public bool ShowMetLocation { get; set; } = true;
 
         [Category(EmbedSettings), Description("Will show Ability in trade embed (Discord only)."), DisplayName("Show Ability")]
         public bool ShowAbility { get; set; } = true;

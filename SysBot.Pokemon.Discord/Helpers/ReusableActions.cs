@@ -178,7 +178,7 @@ public static class ReusableActions
             .WithThumbnailUrl(speciesImageUrl)
             .Build();
 
-        var botMessage = await channel.SendMessageAsync(embed: embed).ConfigureAwait(false); // Send the embed
+        var botMessage = await channel.SendMessageAsync(embed: embed).ConfigureAwait(false); // Send the embed  
         var warningMessage = await channel.SendMessageAsync("This message will self-destruct in 15 seconds. Please copy your data.").ConfigureAwait(false);
 
         _ = Task.Run(async () =>
@@ -228,14 +228,14 @@ public static class ReusableActions
                     LogUtil.LogError("Discord client is disposed. Cannot send file.", "SendPKMAsync");
                     return;
                 }
-                catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.TooManyRequests)
+                catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.TooManyRequests)        
                 {
                     LogUtil.LogInfo($"Discord rate limit encountered, retrying in {delayMs}ms (attempt {retryCount + 1}/{maxRetries})", "SendPKMAsync");
                     await Task.Delay(delayMs);
                     delayMs *= 2;
                     retryCount++;
                 }
-                catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.InternalServerError)
+                catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.InternalServerError)    
                 {
                     retryCount++;
                     if (retryCount >= maxRetries)
@@ -293,12 +293,12 @@ public static class ReusableActions
                     try
                     {
                         await dm.SendFileAsync(tmpPath, msg).ConfigureAwait(false);
-                        await Task.Delay(750).ConfigureAwait(false); // Increased from 500ms for safer pacing
+                        await Task.Delay(750).ConfigureAwait(false); // Increased from 500ms for safer pacing   
                         break; // success
                     }
                     catch (ObjectDisposedException)
                     {
-                        LogUtil.LogError("Discord client is disposed. Cannot send DM.", "SendPKMAsync");
+                        LogUtil.LogError("Discord client is disposed. Cannot send DM.", "SendPKMAsync");        
                         return;
                     }
                     catch (HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode.Value == (DiscordErrorCode)40003)
@@ -311,18 +311,18 @@ public static class ReusableActions
 
                         if (attempt < maxRetries)
                         {
-                            await Task.Delay(5000).ConfigureAwait(false); // Wait 5 seconds for error 40003
+                            await Task.Delay(5000).ConfigureAwait(false); // Wait 5 seconds for error 40003     
                             continue;
                         }
                         break; // Give up after max retries
                     }
-                    catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                    catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)  
                     {
                         // User has DMs disabled or bot is blocked
                         LogUtil.LogError($"Cannot send messages to user {user.Username} ({user.Id}). DMs may be disabled.", "SendPKMAsync");
                         break;
                     }
-                    catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.TooManyRequests)
+                    catch (HttpException ex) when (ex.HttpCode == System.Net.HttpStatusCode.TooManyRequests)    
                     {
                         if (attempt == maxRetries)
                         {
