@@ -1,22 +1,22 @@
-# DudeBot.NET
-![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
+# 🤖 DudeBot.NET
 
-## Support Discord:
+[![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download)
+[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://github.com/NexusRisen/DudeBot.NET)
 
-For support on setting up your own instance of DudeBot.NET, feel free to join the discord! Note: this bot is a fork of the original Sysbot.NET, don't bother the devs at PKHEX Development Project for support. 
+**DudeBot.NET** is a high-performance, feature-rich fork of SysBot.NET, designed for advanced remote control automation of Nintendo Switch Pokémon games. Powered by [sys-botbase](https://github.com/olliz0r/sys-botbase), it provides a robust framework for automated distribution, encounter hunting, and collection management.
 
-[sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
+---
 
-## Screenshots
+## 📑 Table of Contents
+- [🌟 Key Features](#-key-features)
+- [📸 Screenshots](#-screenshots)
+- [🏗️ Project Structure](#️-project-structure)
+- [📦 Dependencies](#-dependencies)
+- [🤝 Support](#-support)
+- [📜 License](#-license)
 
-### Bots Dashboard
-![Bots](pictures/Bots.bmp)
-
-### Settings
-![Settings](pictures/settings.bmp)
-
-### Logs
-![Logs](pictures/logs.bmp)
+---
 
 ## 🌟 Key Features
 
@@ -41,49 +41,60 @@ Automated trading and encounter bots for all modern Nintendo Switch Pokémon tit
   - **Hyper Trained (HT)** indicators for IVs.
   - **Origin & Physical**: Clear display of Met Level, Met Date, and Met Location (with ID).
   - **Scale Visualization**: See exactly how big or small your Pokémon is.
-- **Refined Nature Logic**: Detailed display for minted natures, showing both intended stats and visual nature.
+- **Refined Nature Logic**: Detailed display for minted natures, showing both intended stats and visual nature (e.g., `Adamant (Minted from: Jolly)`).
 - **Special Symbols**: Professional iconography for Shiny, Alpha, Marks, and Ribbons.
 
-### 🛠️ Core Technology
-- **Custom Core Integration**: Powered by a highly optimized fork of `PKHeX.Core` for early feature support and API stability.
-- **Robust Testing**: Over 50 automated unit tests ensuring distribution stability and logic correctness.
-- **Modern UI**: Dashboard with system tray support, theme engine, and real-time log streaming.
+---
 
-## SysBot.Base:
-- Base logic library to be built upon in game-specific projects.
-- Contains a synchronous and asynchronous Bot connection class to interact with sys-botbase.
+## 📸 Screenshots
 
-## SysBot.Tests:
-- Unit Tests for ensuring logic behaves as intended :)
+<details>
+<summary>View Application Previews</summary>
 
-# Example Implementations
+### Bots Dashboard
+![Bots](pictures/Bots.bmp)
 
-The driving force to develop this project is automated bots for Nintendo Switch Pokémon games. An example implementation is provided in this repo to demonstrate interesting tasks this framework is capable of performing. Refer to the [Wiki](https://github.com/NexusRisen/DudeBot.NET/wiki) for more details on the supported Pokémon features.
+### Settings Configuration
+![Settings](pictures/settings.bmp)
 
-## SysBot.Pokemon:
-- Class library using SysBot.Base to contain logic related to creating & running Sword/Shield bots.
+### Real-time Logs
+![Logs](pictures/logs.bmp)
+</details>
 
-## SysBot.Pokemon.WinForms:
-- Simple GUI Launcher for adding, starting, and stopping Pokémon bots (as described above).
-- Configuration of program settings is performed in-app and is saved as a local json file.
+---
 
-## SysBot.Pokemon.Discord:
-- Discord interface for remotely interacting with the WinForms GUI.
-- Provide a discord login token and the Roles that are allowed to interact with your bots.
-- Commands are provided to manage & join the distribution queue.
+## 🏗️ Project Structure
 
-## SysBot.Pokemon.Twitch:
-- Twitch.tv interface for remotely announcing when the distribution starts.
-- Provide a Twitch login token, username, and channel for login.
+| Component | Description |
+| :--- | :--- |
+| **SysBot.Base** | Core logic library containing synchronous and asynchronous bot connection classes. |
+| **SysBot.Pokemon** | Game-specific logic for Pokémon Sword/Shield and subsequent Switch titles. |
+| **SysBot.Pokemon.WinForms** | User-friendly GUI launcher for managing and configuring Pokémon bots. |
+| **SysBot.Pokemon.Discord** | Comprehensive Discord interface for remote interaction and queue management. |
+| **SysBot.Pokemon.ConsoleApp** | Lightweight console interface for headless bot operations. |
+| **SysBot.Tests** | Extensive unit test suite (50+) ensuring logic stability and correctness. |
 
-## SysBot.Pokemon.YouTube:
-- YouTube.com interface for remotely announcing when the distribution starts.
-- Provide a YouTube login ClientID, ClientSecret, and ChannelID for login.
+---
 
-Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](https://github.com/TwitchLib/TwitchLib) and [StreamingClientLibary](https://github.com/SaviorXTanren/StreamingClientLibrary) as a dependency via Nuget.
+## 📦 Dependencies
 
-## Other Dependencies
-Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [Auto-Legality Mod](https://github.com/architdate/PKHeX-Plugins/). Current template generation uses [@santacrab2](https://www.github.com/santacrab2)'s [Auto-Legality Mod fork](https://github.com/santacrab2/PKHeX-Plugins).
+DudeBot.NET leverages several powerful open-source libraries:
+- **Core Engine**: Powered by a custom fork of [PKHeX.Core](https://github.com/kwsch/PKHeX/) by [@hexbyt3](https://github.com/hexbyt3/PKHeXth).
+- **Automation**: [sys-botbase](https://github.com/olliz0r/sys-botbase) for console communication.
+- **Legality**: Integrated [Auto-Legality Mod](https://github.com/architdate/PKHeX-Plugins/) (using [@santacrab2](https://github.com/santacrab2)'s fork).
+- **Integrations**: [Discord.Net](https://github.com/discord-net/Discord.Net), [TwitchLib](https://github.com/TwitchLib/TwitchLib), and [StreamingClientLibrary](https://github.com/SaviorXTanren/StreamingClientLibrary).
 
-# License
-Refer to the `License.md` for details regarding licensing.
+---
+
+## 🤝 Support
+
+Need help setting up your instance?
+- 💬 **Join our community**: [Support Discord](https://discord.gg/your-link-here)
+- 📖 **Read the Docs**: Check the [Wiki](https://github.com/NexusRisen/DudeBot.NET/wiki) for detailed guides.
+
+> **Note**: This bot is a fork of SysBot.NET. Please do not contact the PKHeX Development Project for support regarding DudeBot.NET.
+
+---
+
+## 📜 License
+DudeBot.NET is licensed under the **AGPLv3**. See [LICENSE](LICENSE) for more details.
