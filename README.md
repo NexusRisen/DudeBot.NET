@@ -89,7 +89,6 @@ DudeBot.NET leverages several powerful open-source libraries:
 ## 🤝 Support
 
 Need help setting up your instance?
-- 💬 **Join our community**: [Support Discord](https://discord.gg/your-link-here)
 - 📖 **Read the Docs**: Check the [Wiki](https://github.com/NexusRisen/DudeBot.NET/wiki) for detailed guides.
 
 > **Note**: This bot is a fork of SysBot.NET. Please do not contact the PKHeX Development Project for support regarding DudeBot.NET.
