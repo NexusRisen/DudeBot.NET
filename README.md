@@ -52,13 +52,16 @@ Automated trading and encounter bots for all modern Nintendo Switch Pokémon tit
 <summary>View Application Previews</summary>
 
 ### Bots Dashboard
-![Bots](pictures/Bots.bmp)
+![Bots](pictures/Bot.png)
 
 ### Settings Configuration
-![Settings](pictures/settings.bmp)
+![Settings](pictures/Settings.png)
 
 ### Real-time Logs
-![Logs](pictures/logs.bmp)
+![Logs](pictures/Logs.png)
+
+### Tray Icon Management
+![Tray Hide](pictures/Tray_Hide.png)
 </details>
 
 ---
