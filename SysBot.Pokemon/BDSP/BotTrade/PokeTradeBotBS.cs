@@ -246,9 +246,14 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
         bool isMysteryGift = toSend.FatefulEncounter;
 
         // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        bool hasDefaultTrainerInfo = toSend.OriginalTrainerName.Equals("DudeBot", StringComparison.OrdinalIgnoreCase) &&
-                                   toSend.TID16 == 12345 &&
-                                    toSend.SID16 == 54321;
+        var legalitySettings = Hub.Config.Legality;
+        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                     toSend.SID16 == legalitySettings.GenerateSID16;
+
+        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
 
         if (isMysteryGift && !hasDefaultTrainerInfo)
         {
@@ -271,8 +276,22 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
             // Apply all trade partner details for non-Mystery Gift Pokémon
             cln.TrainerTID7 = trainerTID7;
             cln.TrainerSID7 = trainerSID7;
+
+            // Only override language if Pokemon has default/config language
+            // If user explicitly requested a different language, preserve it
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+            if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
+            {
+                cln.Language = toSend.Language; // Preserve explicitly requested language
+            }
+            else
+            {
+                // Note: We don't have the partner's language in the args here yet, 
+                // but we can preserve the current one or if we had it in sav/tradePartner object.
+                // In BDSP, the trade partner language isn't as easily accessible in this method's current signature.
+            }
+
             cln.OriginalTrainerName = tradePartner;
-            // Any additional properties that would normally be set for BDSP
         }
 
         ClearOTTrash(cln, tradePartner);

@@ -1377,9 +1377,14 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
         bool isMysteryGift = toSend.FatefulEncounter;
 
         // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        bool hasDefaultTrainerInfo = toSend.OriginalTrainerName.Equals("DudeBot", StringComparison.OrdinalIgnoreCase) &&
-                                    toSend.TID16 == 12345 &&
-                                    toSend.SID16 == 54321;
+        var legalitySettings = Hub.Config.Legality;
+        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                     toSend.SID16 == legalitySettings.GenerateSID16;
+
+        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
 
         if (isMysteryGift && !hasDefaultTrainerInfo)
         {
@@ -1404,7 +1409,19 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
             cln.OriginalTrainerGender = tradePartner.Gender;
             cln.TrainerTID7 = uint.Parse(tradePartner.TID7);
             cln.TrainerSID7 = uint.Parse(tradePartner.SID7);
-            cln.Language = tradePartner.Language;
+
+            // Only override language if Pokemon has default/config language
+            // If user explicitly requested a different language, preserve it
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+            if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
+            {
+                cln.Language = toSend.Language; // Preserve explicitly requested language
+            }
+            else
+            {
+                cln.Language = tradePartner.Language;
+            }
+
             cln.OriginalTrainerName = tradePartner.TrainerName;
         }
 
@@ -1439,16 +1456,15 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
         trash.Clear();
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(trainerName.Length, maxLength);
-        for (int i = 0; i < actualLength; i++)
-        {
-            char value = trainerName[i];
-            trash[i * 2] = (byte)value;
-            trash[(i * 2) + 1] = (byte)(value >> 8);
-        }
+
+        var charSpan = trainerName.AsSpan(0, actualLength);
+        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
+        byteSpan.CopyTo(trash);
+
         if (actualLength < maxLength)
         {
-            trash[actualLength * 2] = 0x00;
-            trash[(actualLength * 2) + 1] = 0x00;
+            trash[actualLength * 2] = 0;
+            trash[actualLength * 2 + 1] = 0;
         }
     }
 }

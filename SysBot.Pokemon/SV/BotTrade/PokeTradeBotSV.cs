@@ -325,16 +325,15 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
         string name = tradePartner.OT;
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(name.Length, maxLength);
-        for (int i = 0; i < actualLength; i++)
-        {
-            char value = name[i];
-            trash[i * 2] = (byte)value;
-            trash[(i * 2) + 1] = (byte)(value >> 8);
-        }
+
+        var charSpan = name.AsSpan(0, actualLength);
+        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
+        byteSpan.CopyTo(trash);
+
         if (actualLength < maxLength)
         {
-            trash[actualLength * 2] = 0x00;
-            trash[(actualLength * 2) + 1] = 0x00;
+            trash[actualLength * 2] = 0;
+            trash[actualLength * 2 + 1] = 0;
         }
     }
 
