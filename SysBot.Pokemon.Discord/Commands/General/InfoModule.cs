@@ -1,100 +1,103 @@
-using Discord;
-using Discord.Commands;
-using PKHeX.Core;
-using SysBot.Base;
-using SysBot.Pokemon.Helpers;
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using PKHeX.Core;
+using SysBot.Pokemon.Helpers;
 
 namespace SysBot.Pokemon.Discord;
 
-// src: https://github.com/foxbot/patek/blob/master/src/Patek/Modules/InfoModule.cs
-// ISC License (ISC)
-// Copyright 2017, Christopher F. <foxbot@protonmail.com>
 public class InfoModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new()
 {
-    private readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
-    private const string Version = DudeBot.Version;
-    private const string dev = "https://www.chinchou.net";
-    private const string detail = "I am an open-source Discord bot powered by PKHeX.Core and other open-source software, modified by the Brother Dudes.";
+    private const string WebsiteUrl = "https://nexusrisen.net";
+    private const string ThumbnailUrl = "https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/refs/heads/main/BotIcons/dudebot.png";
+    private const string Description = "An open-source Discord bot powered by PKHeX.Core and other open-source projects.";
 
     [Command("Info")]
     [Alias("about", "whoami", "owner")]
     public async Task InfoAsync()
     {
         var app = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(false);
-        var game = typeof(T) switch
-        {
-            Type type when type == typeof(PA9) => "Pokémon Legends: ZA",
-            Type type when type == typeof(PK9) => "Scarlet & Violet",
-            Type type when type == typeof(PK8) => "Sword & Shield",
-            Type type when type == typeof(PA8) => "Pokémon Legends: Arceus",
-            Type type when type == typeof(PB8) => "Brilliant Diamond & Shining Pearl",
-            _ => "Let's Go Pikachu & Eevee"
-        };
+        var gameName = GetGameName();
+        var uptime = GetUptime();
+        var heapSize = GetHeapSize();
 
-        var builder = new EmbedBuilder
-        {
-            Title = "Here's a bit about me!",
-            Description = detail,
-            Color = Color.Gold,
-            ThumbnailUrl = "https://raw.githubusercontent.com/Havokx89/Bot-Sprite-Images/refs/heads/main/BotIcons/dudebot.png",
-            // To be added later
-            //ImageUrl = ""
-        };
+        var embed = new EmbedBuilder()
+            .WithTitle("DudeBot.NET - Information")
+            .WithDescription(Description)
+            .WithColor(Color.Gold)
+            .WithThumbnailUrl(ThumbnailUrl)
+            .AddField("Project Info",
+                $"{Format.Bold("Main Developer")}: [Nexus Risen]({WebsiteUrl})\n" +
+                $"{Format.Bold("Owner")}: {app.Owner.Mention} ({app.Owner.Id})\n" +
+                $"{Format.Bold("Current Mode")}: {gameName}\n" +
+                $"{Format.Bold("Version")}: {DudeBot.Version}\n" +
+                $"{Format.Bold("Build Time")}: {GetVersionInfo("SysBot.Base", false)}")
+            .AddField("Contributors",
+                $"{Format.Bold("Luisamine")}: Research & Data Analysis\n" +
+                $"{Format.Bold("Hexbyt3")}: Core Engine Enhancements\n" +
+                $"{Format.Bold("SantaCrab")}: Auto-Legality Mod (ALM)")
+            .AddField("Dependencies",
+                $"{Format.Bold("PKHeX.Core")}: {GetVersionInfo("PKHeX.Core")}\n" +
+                $"{Format.Bold("AutoLegality")}: {GetVersionInfo("PKHeX.Core.AutoMod")}\n" +
+                $"{Format.Bold("Base System")}: [SysBot.NET](https://github.com/kwsch/SysBot.NET)")
+            .AddField("System Stats",
+                $"{Format.Bold("Uptime")}: {uptime}\n" +
+                $"{Format.Bold("Guilds")}: {Context.Client.Guilds.Count}\n" +
+                $"{Format.Bold("Users")}: {Context.Client.Guilds.Sum(g => (long)g.MemberCount)}\n" +
+                $"{Format.Bold("Heap Size")}: {heapSize} MiB\n" +
+                $"{Format.Bold("Runtime")}: {RuntimeInformation.FrameworkDescription}")
+            .WithFooter(footer => footer.Text = $"OS: {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})")
+            .Build();
 
-        builder.AddField("Info",
-            $"- {Format.Bold("Owner")}: {app.Owner.Username} ({app.Owner.Id})\n" +
-            $"- {Format.Bold("Current Botmode")}: {game}\n" +
-            $"- {Format.Bold("DudeBot.NET Version")}: {Version}\n" +
-            $"- {Format.Bold("PKHeX.Core Version")}: {GetVersionInfo("PKHeX.Core")}\n" +
-            $"- {Format.Bold("AutoLegality Version")}: {GetVersionInfo("PKHeX.Core.AutoMod")}\n" +
-            $"- {Format.Bold("Buildtime")}: {GetVersionInfo("SysBot.Base", false)}\n" +
-            $"- {Format.Bold("Built on kwsch [SysBot.NET](https://github.com/kwsch/SysBot.NET)")}\n" +
-            $"- {Format.Bold($"Dev Server: [In Link We Trust]({dev})")}"
-            );
-        builder.AddField("Stats",
-            $"- {Format.Bold("Uptime")}: {GetUptime()}\n" +
-            $"- {Format.Bold("Runtime")}: {RuntimeInformation.FrameworkDescription} {RuntimeInformation.ProcessArchitecture} " +
-            $"({RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture})\n" +
-            $"- {Format.Bold("Heap Size")}: {GetHeapSize()}MiB\n" +
-            $"- {Format.Bold("Guilds")}: {Context.Client.Guilds.Count}\n" +
-            $"- {Format.Bold("Channels")}: {Context.Client.Guilds.Sum(g => g.Channels.Count)}\n" +
-            $"- {Format.Bold("Users")}: {Context.Client.Guilds.Sum(g => g.MemberCount)}\n"
-        );
-
-        await ReplyAsync(embed: builder.Build()).ConfigureAwait(false);
+        await ReplyAsync(embed: embed).ConfigureAwait(false);
     }
-    private static string GetHeapSize() => Math.Round(GC.GetTotalMemory(true) / (1024.0 * 1024.0), 2).ToString(CultureInfo.CurrentCulture);
 
-    private static string GetUptime() => (DateTime.Now - Process.GetCurrentProcess().StartTime).ToString(@"dd\.hh\:mm\:ss");
-
-    private static string GetVersionInfo(string assemblyName, bool inclVersion = true)
+    private static string GetGameName() => typeof(T).Name switch
     {
-        const string _default = "Unknown";
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        var assembly = Array.Find(assemblies, x => x.GetName().Name == assemblyName);
+        nameof(PA9) => "Pokémon Legends: Z-A",
+        nameof(PK9) => "Pokémon Scarlet & Violet",
+        nameof(PK8) => "Pokémon Sword & Shield",
+        nameof(PA8) => "Pokémon Legends: Arceus",
+        nameof(PB8) => "Pokémon BDSP",
+        _ => "Pokémon LGPE"
+    };
+
+    private static string GetHeapSize() =>
+        Math.Round(GC.GetTotalMemory(true) / (1024.0 * 1024.0), 2).ToString(CultureInfo.CurrentCulture);
+
+    private static string GetUptime() =>
+        (DateTime.Now - Process.GetCurrentProcess().StartTime).ToString(@"dd\.hh\:mm\:ss");
+
+    private static string GetVersionInfo(string assemblyName, bool includeVersion = true)
+    {
+        var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(x => x.GetName().Name == assemblyName);
 
         var attribute = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-        if (attribute is null)
-            return _default;
+        if (attribute == null)
+            return "Unknown";
 
         var info = attribute.InformationalVersion;
         var split = info.Split('+');
-        if (split.Length >= 2)
+        if (split.Length < 2)
+            return includeVersion ? info : "Unknown";
+
+        var version = split[0];
+        var revision = split[1];
+
+        if (DateTime.TryParseExact(revision, "yyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var buildTime))
         {
-            var version = split[0];
-            var revision = split[1];
-            if (DateTime.TryParseExact(revision, "yyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var buildTime))
-                return (inclVersion ? $"{version} " : "") + $@"{buildTime:yy-MM-dd\.hh\:mm}";
-            return inclVersion ? version : _default;
+            var timeStr = buildTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            return includeVersion ? $"{version} ({timeStr})" : timeStr;
         }
-        return _default;
+
+        return includeVersion ? version : "Unknown";
     }
 }

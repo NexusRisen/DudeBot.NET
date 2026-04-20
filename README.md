@@ -4,7 +4,7 @@
 [![.NET Version](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://github.com/NexusRisen/DudeBot.NET)
 
-**DudeBot.NET** is a high-performance, feature-rich fork of SysBot.NET, designed for advanced remote control automation of Nintendo Switch Pokémon games. Powered by [sys-botbase](https://github.com/olliz0r/sys-botbase), it provides a robust framework for automated distribution, encounter hunting, and collection management.
+**DudeBot.NET** is a high-performance, feature-rich fork of SysBot.NET, designed for advanced remote control automation of Nintendo Switch Pokémon games. Developed and maintained by **Nexus Risen**, it provides a robust framework for automated distribution, encounter hunting, and collection management.
 
 ---
 
@@ -13,6 +13,7 @@
 - [📸 Screenshots](#-screenshots)
 - [🏗️ Project Structure](#️-project-structure)
 - [📦 Dependencies](#-dependencies)
+- [👨‍💻 Development](#-development)
 - [🤝 Support](#-support)
 - [📜 License](#-license)
 
@@ -86,6 +87,16 @@ DudeBot.NET leverages several powerful open-source libraries:
 - **Automation**: [sys-botbase](https://github.com/olliz0r/sys-botbase) for console communication.
 - **Legality**: Integrated [Auto-Legality Mod](https://github.com/architdate/PKHeX-Plugins/) (using [@santacrab2](https://github.com/santacrab2)'s fork).
 - **Integrations**: [Discord.Net](https://github.com/discord-net/Discord.Net), [TwitchLib](https://github.com/TwitchLib/TwitchLib), and [StreamingClientLibrary](https://github.com/SaviorXTanren/StreamingClientLibrary).
+
+---
+
+## 👨‍💻 Development
+
+DudeBot.NET is actively developed by:
+- **[Nexus Risen](https://nexusrisen.net)** - Main Developer
+- **Luisamine** - Research & Data Analysis
+- **Hexbyt3** - Core Engine Enhancements
+- **SantaCrab** - Auto-Legality Mod (ALM)
 
 ---
 

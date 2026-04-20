@@ -33,6 +33,7 @@ namespace SysBot.Pokemon.WinForms
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             P_Sidebar = new Panel();
+            B_Credits = new Button();
             B_HideTray = new Button();
             B_NavLogs = new Button();
             B_NavHub = new Button();
@@ -63,6 +64,16 @@ namespace SysBot.Pokemon.WinForms
             PG_Hub = new PropertyGrid();
             Tab_Logs = new TabPage();
             RTB_Logs = new RichTextBox();
+            Tab_Credits = new TabPage();
+            P_CreditsContainer = new Panel();
+            L_CreditsSpecialNames = new Label();
+            L_CreditsSpecialTitle = new Label();
+            L_CreditsContribNames = new Label();
+            L_CreditsContribTitle = new Label();
+            L_CreditsDevName = new Label();
+            L_CreditsDevTitle = new Label();
+            L_CreditsMainTitle = new Label();
+            PB_CreditsLogo = new PictureBox();
             P_Sidebar.SuspendLayout();
             P_LogoArea.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)PB_LogoSidebar).BeginInit();
@@ -115,6 +126,7 @@ namespace SysBot.Pokemon.WinForms
             // P_Sidebar
             // 
             P_Sidebar.Controls.Add(B_HideTray);
+            P_Sidebar.Controls.Add(B_Credits);
             P_Sidebar.Controls.Add(B_NavLogs);
             P_Sidebar.Controls.Add(B_NavHub);
             P_Sidebar.Controls.Add(B_NavBots);
@@ -125,6 +137,25 @@ namespace SysBot.Pokemon.WinForms
             P_Sidebar.Size = new Size(180, 561);
             P_Sidebar.TabIndex = 0;
             // 
+            // B_Credits
+            // 
+            B_Credits.Dock = DockStyle.Top;
+            B_Credits.FlatAppearance.BorderSize = 0;
+            B_Credits.FlatStyle = FlatStyle.Flat;
+            B_Credits.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
+            B_Credits.ForeColor = Color.Gainsboro;
+            B_Credits.ImageAlign = ContentAlignment.MiddleLeft;
+            B_Credits.Location = new Point(0, 220);
+            B_Credits.Name = "B_Credits";
+            B_Credits.Padding = new Padding(15, 0, 0, 0);
+            B_Credits.Size = new Size(180, 50);
+            B_Credits.TabIndex = 5;
+            B_Credits.Text = "  Credits";
+            B_Credits.TextAlign = ContentAlignment.MiddleLeft;
+            B_Credits.TextImageRelation = TextImageRelation.ImageBeforeText;
+            B_Credits.UseVisualStyleBackColor = true;
+            B_Credits.Click += B_Credits_Click;
+            // 
             // B_HideTray
             // 
             B_HideTray.Dock = DockStyle.Top;
@@ -133,7 +164,7 @@ namespace SysBot.Pokemon.WinForms
             B_HideTray.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
             B_HideTray.ForeColor = Color.Gainsboro;
             B_HideTray.ImageAlign = ContentAlignment.MiddleLeft;
-            B_HideTray.Location = new Point(0, 220);
+            B_HideTray.Location = new Point(0, 270);
             B_HideTray.Name = "B_HideTray";
             B_HideTray.Padding = new Padding(15, 0, 0, 0);
             B_HideTray.Size = new Size(180, 50);
@@ -348,6 +379,7 @@ namespace SysBot.Pokemon.WinForms
             TC_Main.Controls.Add(Tab_Bots);
             TC_Main.Controls.Add(Tab_Hub);
             TC_Main.Controls.Add(Tab_Logs);
+            TC_Main.Controls.Add(Tab_Credits);
             TC_Main.Dock = DockStyle.Fill;
             TC_Main.ItemSize = new Size(0, 1);
             TC_Main.Location = new Point(180, 65);
@@ -514,6 +546,121 @@ namespace SysBot.Pokemon.WinForms
             RTB_Logs.TabIndex = 0;
             RTB_Logs.Text = "";
             // 
+            // Tab_Credits
+            // 
+            Tab_Credits.Controls.Add(P_CreditsContainer);
+            Tab_Credits.Location = new Point(4, 5);
+            Tab_Credits.Name = "Tab_Credits";
+            Tab_Credits.Size = new Size(662, 442);
+            Tab_Credits.TabIndex = 3;
+            Tab_Credits.Text = "Credits";
+            Tab_Credits.UseVisualStyleBackColor = true;
+            // 
+            // P_CreditsContainer
+            // 
+            P_CreditsContainer.AutoScroll = true;
+            P_CreditsContainer.Controls.Add(L_CreditsSpecialNames);
+            P_CreditsContainer.Controls.Add(L_CreditsSpecialTitle);
+            P_CreditsContainer.Controls.Add(L_CreditsContribNames);
+            P_CreditsContainer.Controls.Add(L_CreditsContribTitle);
+            P_CreditsContainer.Controls.Add(L_CreditsDevName);
+            P_CreditsContainer.Controls.Add(L_CreditsDevTitle);
+            P_CreditsContainer.Controls.Add(L_CreditsMainTitle);
+            P_CreditsContainer.Controls.Add(PB_CreditsLogo);
+            P_CreditsContainer.Dock = DockStyle.Fill;
+            P_CreditsContainer.Location = new Point(0, 0);
+            P_CreditsContainer.Name = "P_CreditsContainer";
+            P_CreditsContainer.Size = new Size(662, 442);
+            P_CreditsContainer.TabIndex = 0;
+            // 
+            // L_CreditsSpecialNames
+            // 
+            L_CreditsSpecialNames.Dock = DockStyle.Top;
+            L_CreditsSpecialNames.Font = new Font("Segoe UI", 12F);
+            L_CreditsSpecialNames.Location = new Point(0, 420);
+            L_CreditsSpecialNames.Name = "L_CreditsSpecialNames";
+            L_CreditsSpecialNames.Size = new Size(662, 60);
+            L_CreditsSpecialNames.TabIndex = 7;
+            L_CreditsSpecialNames.Text = "kwsch, Creator of SysBot.NET";
+            L_CreditsSpecialNames.TextAlign = ContentAlignment.TopCenter;
+            // 
+            // L_CreditsSpecialTitle
+            // 
+            L_CreditsSpecialTitle.Dock = DockStyle.Top;
+            L_CreditsSpecialTitle.Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold);
+            L_CreditsSpecialTitle.Location = new Point(0, 385);
+            L_CreditsSpecialTitle.Name = "L_CreditsSpecialTitle";
+            L_CreditsSpecialTitle.Size = new Size(662, 35);
+            L_CreditsSpecialTitle.TabIndex = 6;
+            L_CreditsSpecialTitle.Text = "Special Thanks To";
+            L_CreditsSpecialTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // L_CreditsContribNames
+            // 
+            L_CreditsContribNames.Dock = DockStyle.Top;
+            L_CreditsContribNames.Font = new Font("Segoe UI", 12F);
+            L_CreditsContribNames.Location = new Point(0, 310);
+            L_CreditsContribNames.Name = "L_CreditsContribNames";
+            L_CreditsContribNames.Size = new Size(662, 75);
+            L_CreditsContribNames.TabIndex = 5;
+            L_CreditsContribNames.Text = "Luisamine, Research & Data Analysis\r\nHexbyt3, Core Engine Enhancements\r\nSantaCrab, Auto-Legality Mod (ALM)";
+            L_CreditsContribNames.TextAlign = ContentAlignment.TopCenter;
+            // 
+            // L_CreditsContribTitle
+            // 
+            L_CreditsContribTitle.Dock = DockStyle.Top;
+            L_CreditsContribTitle.Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold);
+            L_CreditsContribTitle.Location = new Point(0, 275);
+            L_CreditsContribTitle.Name = "L_CreditsContribTitle";
+            L_CreditsContribTitle.Size = new Size(662, 35);
+            L_CreditsContribTitle.TabIndex = 4;
+            L_CreditsContribTitle.Text = "Project Contributors";
+            L_CreditsContribTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // L_CreditsDevName
+            // 
+            L_CreditsDevName.Dock = DockStyle.Top;
+            L_CreditsDevName.Font = new Font("Segoe UI", 12F);
+            L_CreditsDevName.Location = new Point(0, 235);
+            L_CreditsDevName.Name = "L_CreditsDevName";
+            L_CreditsDevName.Size = new Size(662, 40);
+            L_CreditsDevName.TabIndex = 3;
+            L_CreditsDevName.Text = "Nexus Risen, Developer of DudeBot.NET";
+            L_CreditsDevName.TextAlign = ContentAlignment.TopCenter;
+            // 
+            // L_CreditsDevTitle
+            // 
+            L_CreditsDevTitle.Dock = DockStyle.Top;
+            L_CreditsDevTitle.Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold);
+            L_CreditsDevTitle.Location = new Point(0, 200);
+            L_CreditsDevTitle.Name = "L_CreditsDevTitle";
+            L_CreditsDevTitle.Size = new Size(662, 35);
+            L_CreditsDevTitle.TabIndex = 2;
+            L_CreditsDevTitle.Text = "Main Developer";
+            L_CreditsDevTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // L_CreditsMainTitle
+            // 
+            L_CreditsMainTitle.Dock = DockStyle.Top;
+            L_CreditsMainTitle.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            L_CreditsMainTitle.Location = new Point(0, 160);
+            L_CreditsMainTitle.Name = "L_CreditsMainTitle";
+            L_CreditsMainTitle.Size = new Size(662, 70);
+            L_CreditsMainTitle.TabIndex = 1;
+            L_CreditsMainTitle.Text = "DudeBot.NET";
+            L_CreditsMainTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // PB_CreditsLogo
+            // 
+            PB_CreditsLogo.Dock = DockStyle.Top;
+            PB_CreditsLogo.Location = new Point(0, 0);
+            PB_CreditsLogo.Name = "PB_CreditsLogo";
+            PB_CreditsLogo.Padding = new Padding(0, 20, 0, 0);
+            PB_CreditsLogo.Size = new Size(662, 160);
+            PB_CreditsLogo.SizeMode = PictureBoxSizeMode.Zoom;
+            PB_CreditsLogo.TabIndex = 0;
+            PB_CreditsLogo.TabStop = false;
+            // 
             // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -564,6 +711,16 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.TabPage Tab_Bots;
         private System.Windows.Forms.TabPage Tab_Logs;
         private System.Windows.Forms.RichTextBox RTB_Logs;
+        private System.Windows.Forms.TabPage Tab_Credits;
+        private System.Windows.Forms.Panel P_CreditsContainer;
+        private System.Windows.Forms.PictureBox PB_CreditsLogo;
+        private System.Windows.Forms.Label L_CreditsMainTitle;
+        private System.Windows.Forms.Label L_CreditsDevTitle;
+        private System.Windows.Forms.Label L_CreditsDevName;
+        private System.Windows.Forms.Label L_CreditsContribTitle;
+        private System.Windows.Forms.Label L_CreditsContribNames;
+        private System.Windows.Forms.Label L_CreditsSpecialTitle;
+        private System.Windows.Forms.Label L_CreditsSpecialNames;
         private System.Windows.Forms.TabPage Tab_Hub;
         private System.Windows.Forms.PropertyGrid PG_Hub;
         private System.Windows.Forms.Button B_Stop;
@@ -584,5 +741,6 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.ToolStripMenuItem trayRestore;
         private System.Windows.Forms.ToolStripMenuItem trayExit;
         private System.Windows.Forms.Button B_HideTray;
+        private System.Windows.Forms.Button B_Credits;
     }
 }

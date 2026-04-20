@@ -200,7 +200,7 @@ public static class ThemeManager
             c.BackColor = palette.HeaderBackColor;
             c.ForeColor = palette.HeaderForeColor;
         }
-        else if (c.Name.StartsWith("B_Nav"))
+        else if (c.Name.StartsWith("B_Nav") || c.Name == "B_Credits" || c.Name == "B_HideTray")
         {
             c.BackColor = palette.SidebarBackColor;
             c.ForeColor = palette.SidebarButtonForeColor;

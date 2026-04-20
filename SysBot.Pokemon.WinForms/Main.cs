@@ -19,13 +19,16 @@ namespace SysBot.Pokemon.WinForms;
 /* 
 *** Thank You and Credits ***
 We would like to express our sincere gratitude to the following individuals and organizations for their invaluable contributions to this program:
-Core Development Team:
-- Havokx, Co-Creator of DudeBot.NET
-- Link2026, Co-Creator of DudeBot.NET
+Main Developer:
+- Nexus Risen, Developer of DudeBot.NET
+
+Project Contributors:
+- Luisamine, Research & Data Analysis
+- Hexbyt3, Core Engine Enhancements
+- SantaCrab, Auto-Legality Mod (ALM)
 
 Special Thanks To:
 - kwsch, Creator of SysBot.NET
-- Secludedly, Creator of ZE-Fusionbot
 
 First and foremost, I appreciate the opportunity to have been part of this program.
 Understanding new concepts was challenging, but I’m grateful for the knowledge I gained.
@@ -211,6 +214,8 @@ public sealed partial class Main : Form
         ThemeManager.ApplyTheme(this, CB_Theme.SelectedItem?.ToString() ?? "Dark Theme");
 
         LogUtil.Forwarders.Add(new TextBoxForwarder(RTB_Logs));
+
+        PB_CreditsLogo.Image = Resources.icon.ToBitmap();
     }
 
     private ProgramConfig GetCurrentConfiguration()
@@ -564,5 +569,11 @@ public sealed partial class Main : Form
     {
         Hide();
         trayIcon.Visible = true;
+    }
+
+    private void B_Credits_Click(object sender, EventArgs e)
+    {
+        TC_Main.SelectedIndex = 3;
+        L_Title.Text = "CREDITS";
     }
 }

@@ -24,7 +24,7 @@
     <EmbedAllSources>true</EmbedAllSources>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <PublishTrimmed>false</PublishTrimmed>
-    <Authors>Kaphotics, Link2026, Havokx</Authors>
+    <Authors>Kaphotics, Nexus Risen</Authors>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
