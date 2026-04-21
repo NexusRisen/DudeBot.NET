@@ -333,14 +333,10 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         if (!isMysteryGift)
         {
             // Validate language ID - if invalid, default to English (2)
-            int language = tradePartner.Language;
-            
-            if (language < 1 || language > 12) // Valid language IDs are 1-12
-          
-                language = 2; // English
-            
-            cln.Language = language;
-            
+            int language = tradePartner.Language;          
+            if (language < 1 || language > 12) // Valid language IDs are 1-12      
+                language = 2; // English         
+            cln.Language = language;           
         }
 
         ClearOTTrash(cln, tradePartner);
