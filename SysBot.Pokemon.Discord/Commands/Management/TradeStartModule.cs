@@ -25,6 +25,13 @@ public class TradeStartModule<T> : ModuleBase<SocketCommandContext> where T : PK
 
     private static readonly Dictionary<ulong, TradeStartAction> Channels = [];
 
+    public static void ClearAll()
+    {
+        foreach (var entry in Channels.Values)
+            SysCord<T>.Runner.Hub.Queues.Forwarders.Remove(entry.Action);
+        Channels.Clear();
+    }
+
     private static void Remove(TradeStartAction entry)
     {
         Channels.Remove(entry.ChannelID);

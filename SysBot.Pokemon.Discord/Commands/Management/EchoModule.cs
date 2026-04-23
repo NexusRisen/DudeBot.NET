@@ -66,6 +66,14 @@ namespace SysBot.Pokemon.Discord
 
         private static readonly Dictionary<ulong, EncounterEchoChannel> EncounterChannels = [];
 
+        public static void ClearAll()
+        {
+            foreach (var ch in Channels.Values)
+                EchoUtil.Forwarders.Remove(ch.Action);
+            Channels.Clear();
+            EncounterChannels.Clear();
+        }
+
         public static void RestoreChannels(DiscordSocketClient discord, DiscordSettings cfg)
         {
             Settings = cfg;

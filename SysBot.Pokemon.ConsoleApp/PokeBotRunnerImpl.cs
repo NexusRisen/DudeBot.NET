@@ -29,6 +29,7 @@ public class PokeBotRunnerImpl<T> : PokeBotRunner<T> where T : PKM, new()
             return;
 
         var bot = new SysCord<T>(this, _config);
-        Task.Run(() => bot.MainAsync(token, CancellationToken.None), CancellationToken.None);
+        Integrations.Add(bot);
+        Task.Run(() => bot.MainAsync(token, IntegrationTokenSource.Token), IntegrationTokenSource.Token);
     }
 }

@@ -213,6 +213,7 @@ public sealed partial class Main : Form
 
         ThemeManager.ApplyTheme(this, CB_Theme.SelectedItem?.ToString() ?? "Dark Theme");
 
+        LogUtil.Forwarders.RemoveAll(x => x is TextBoxForwarder);
         LogUtil.Forwarders.Add(new TextBoxForwarder(RTB_Logs));
 
         PB_CreditsLogo.Image = Resources.icon.ToBitmap();
@@ -320,7 +321,21 @@ public sealed partial class Main : Form
 
     private void UpdateRunnerAndUI()
     {
+        RunningEnvironment?.StopAll();
         RunningEnvironment = GetRunner(Config);
+        foreach (var c in FLP_Bots.Controls.OfType<BotController>())
+        {
+            c.Initialize(RunningEnvironment, c.State);
+            try
+            {
+                var newBot = RunningEnvironment.CreateBotFromConfig(c.State);
+                RunningEnvironment.Add(newBot);
+            }
+            catch (Exception ex)
+            {
+                LogUtil.LogError($"Failed to re-add bot {c.State.Connection} to new environment: {ex.Message}", "Form");
+            }
+        }
         Text = $"{(string.IsNullOrEmpty(Config.Hub.BotName) ? "DudeBot.NET" : Config.Hub.BotName)} {DudeBot.Version} ({Config.Mode})";
     }
 

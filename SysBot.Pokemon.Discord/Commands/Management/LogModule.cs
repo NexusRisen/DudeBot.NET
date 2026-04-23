@@ -13,6 +13,13 @@ public class LogModule : ModuleBase<SocketCommandContext>
 {
     private static readonly Dictionary<ulong, ChannelLogger> Channels = [];
 
+    public static void ClearAll()
+    {
+        foreach (var l in Channels.Values)
+            LogUtil.Forwarders.Remove(l);
+        Channels.Clear();
+    }
+
     public static void RestoreLogging(DiscordSocketClient discord, DiscordSettings settings)
     {
         foreach (var ch in settings.LoggingChannels)

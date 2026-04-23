@@ -24,6 +24,15 @@ namespace SysBot.Pokemon.WinForms
             return (updateAvailable, updateRequired, newVersion ?? string.Empty);
         }
 
+        public static async Task<bool> IsDownloadAvailableAsync()
+        {
+            ReleaseInfo? latestRelease = await FetchLatestReleaseAsync();
+            if (latestRelease?.Assets == null || latestRelease.Assets.Count == 0)
+                return false;
+
+            return true;
+        }
+
         public static async Task<string> FetchChangelogAsync()
         {
             ReleaseInfo? latestRelease = await FetchLatestReleaseAsync();

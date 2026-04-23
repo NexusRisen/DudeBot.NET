@@ -26,7 +26,7 @@ public static class SysCordSettings
     public static DiscordSettings Settings => Manager.Config;
 }
 
-public sealed class SysCord<T> where T : PKM, new()
+public sealed class SysCord<T> : IDisposable where T : PKM, new()
 {
     public readonly PokeTradeHub<T> Hub;
     private readonly ProgramConfig _config;
@@ -46,6 +46,8 @@ public sealed class SysCord<T> where T : PKM, new()
     };
 
     private readonly DiscordManager Manager;
+    private readonly CancellationTokenSource _cts = new();
+    private readonly DMRelayService? _dmRelay;
 
     public SysCord(PokeBotRunner<T> runner, ProgramConfig config)
     {
@@ -58,24 +60,12 @@ public sealed class SysCord<T> where T : PKM, new()
         {
             if (bot is ITradeBot tradeBot)
             {
-                tradeBot.ConnectionError += async (sender, ex) => await HandleBotStop();
-                tradeBot.ConnectionSuccess += async (sender, e) => await HandleBotStart();
+                tradeBot.ConnectionError += OnBotConnectionError;
+                tradeBot.ConnectionSuccess += OnBotConnectionSuccess;
             }
         }
         SysCordSettings.Manager = Manager;
         SysCordSettings.HubConfig = Hub.Config;
-
-        _client = new DiscordSocketClient(new DiscordSocketConfig
-        {
-            // How much logging do you want to see?
-            LogLevel = LogSeverity.Info,
-            GatewayIntents = Guilds | GuildMessages | DirectMessages | GuildMembers | GuildPresences | MessageContent,
-
-            // If you or another service needs to do anything with messages
-            // (ex. checking Reactions, checking the content of edited/deleted messages),
-            // you must set the MessageCacheSize. You may adjust the number as needed.
-            //MessageCacheSize = 50,
-        });
 
         _client = new DiscordSocketClient(new DiscordSocketConfig
         {
@@ -95,10 +85,9 @@ public sealed class SysCord<T> where T : PKM, new()
 
         if (forwardTargetId != 0)
         {
-            _ = new DMRelayService(_client, forwardTargetId);
+            _dmRelay = new DMRelayService(_client, forwardTargetId);
             LogUtil.LogInfo("SysCord", $"DM relay active -> forwarding bot DMs to {forwardTargetId}");
         }
-
 
         _commands = new CommandService(new CommandServiceConfig
         {
@@ -129,6 +118,42 @@ public sealed class SysCord<T> where T : PKM, new()
             Task.Run(() => ReconnectAsync());
             return Task.CompletedTask;
         };
+    }
+
+    private void OnBotConnectionError(object? sender, Exception ex) => Task.Run(HandleBotStop);
+    private void OnBotConnectionSuccess(object? sender, EventArgs e) => Task.Run(HandleBotStart);
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        _dmRelay?.Dispose();
+
+        _client.Log -= Log;
+        _commands.Log -= Log;
+        _client.PresenceUpdated -= Client_PresenceUpdated;
+        _client.Ready -= LoadLoggingAndEcho;
+        _client.MessageReceived -= HandleMessageAsync;
+
+        LogModule.ClearAll();
+        EchoModule.ClearAll();
+        TradeStartModule<T>.ClearAll();
+
+        foreach (var bot in Runner.Hub.Bots.ToArray())
+        {
+            if (bot is ITradeBot tradeBot)
+            {
+                tradeBot.ConnectionError -= OnBotConnectionError;
+                tradeBot.ConnectionSuccess -= OnBotConnectionSuccess;
+            }
+        }
+
+        try
+        {
+            _client.StopAsync().GetAwaiter().GetResult();
+            _client.Dispose();
+        }
+        catch { }
     }
 
     public static PokeBotRunner<T> Runner { get; private set; } = default!;

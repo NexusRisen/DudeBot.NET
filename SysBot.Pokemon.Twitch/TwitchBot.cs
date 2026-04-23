@@ -12,7 +12,7 @@ using TwitchLib.Communication.Models;
 
 namespace SysBot.Pokemon.Twitch
 {
-    public class TwitchBot<T> where T : PKM, new()
+    public class TwitchBot<T> : IDisposable where T : PKM, new()
     {
         internal static readonly List<TwitchQueue<T>> QueuePool = new();
 
@@ -23,6 +23,7 @@ namespace SysBot.Pokemon.Twitch
         private readonly TwitchClient client;
 
         private readonly TwitchSettings Settings;
+        private readonly Action<string> _echoForwarder;
 
         public TwitchBot(TwitchSettings settings, PokeTradeHub<T> hub)
         {
@@ -60,27 +61,65 @@ namespace SysBot.Pokemon.Twitch
             client.OnDisconnected += Client_OnDisconnected;
             client.OnLeftChannel += Client_OnLeftChannel;
 
-            client.OnMessageSent += (_, e)
-                => LogUtil.LogText($"[{client.TwitchUsername}] - Message Sent in {e.SentMessage.Channel}: {e.SentMessage.Message}");
-            client.OnWhisperSent += (_, e)
-                => LogUtil.LogText($"[{client.TwitchUsername}] - Whisper Sent to @{e.Receiver}: {e.Message}");
-
-            client.OnMessageThrottled += (_, e)
-                => LogUtil.LogError($"Message Throttled: {e.Message}", "TwitchBot");
-            client.OnWhisperThrottled += (_, e)
-                => LogUtil.LogError($"Whisper Throttled: {e.Message}", "TwitchBot");
-
-            client.OnError += (_, e) =>
-                LogUtil.LogError(e.Exception.Message + Environment.NewLine + e.Exception.StackTrace, "TwitchBot");
-            client.OnConnectionError += (_, e) =>
-                LogUtil.LogError(e.BotUsername + Environment.NewLine + e.Error.Message, "TwitchBot");
+            client.OnMessageSent += Client_OnMessageSent;
+            client.OnWhisperSent += Client_OnWhisperSent;
+            client.OnMessageThrottled += Client_OnMessageThrottled;
+            client.OnWhisperThrottled += Client_OnWhisperThrottled;
+            client.OnError += Client_OnError;
+            client.OnConnectionError += Client_OnConnectionError;
 
             client.Connect();
 
-            EchoUtil.Forwarders.Add(msg => client.SendMessage(Channel, msg));
+            _echoForwarder = msg => client.SendMessage(Channel, msg);
+            EchoUtil.Forwarders.Add(_echoForwarder);
 
             // Turn on if verified
             // Hub.Queues.Forwarders.Add((bot, detail) => client.SendMessage(Channel, $"{bot.Connection.Name} is now trading (ID {detail.ID}) {detail.Trainer.TrainerName}"));
+        }
+
+        private void Client_OnMessageSent(object? sender, OnMessageSentArgs e)
+            => LogUtil.LogText($"[{client.TwitchUsername}] - Message Sent in {e.SentMessage.Channel}: {e.SentMessage.Message}");
+
+        private void Client_OnWhisperSent(object? sender, OnWhisperSentArgs e)
+            => LogUtil.LogText($"[{client.TwitchUsername}] - Whisper Sent to @{e.Receiver}: {e.Message}");
+
+        private void Client_OnMessageThrottled(object? sender, OnMessageThrottledArgs e)
+            => LogUtil.LogError($"Message Throttled: {e.Message}", "TwitchBot");
+
+        private void Client_OnWhisperThrottled(object? sender, OnWhisperThrottledArgs e)
+            => LogUtil.LogError($"Whisper Throttled: {e.Message}", "TwitchBot");
+
+        private void Client_OnError(object? sender, OnErrorEventArgs e)
+            => LogUtil.LogError(e.Exception.Message + Environment.NewLine + e.Exception.StackTrace, "TwitchBot");
+
+        private void Client_OnConnectionError(object? sender, OnConnectionErrorArgs e)
+            => LogUtil.LogError(e.BotUsername + Environment.NewLine + e.Error.Message, "TwitchBot");
+
+        public void Dispose()
+        {
+            EchoUtil.Forwarders.Remove(_echoForwarder);
+            client.OnLog -= Client_OnLog;
+            client.OnJoinedChannel -= Client_OnJoinedChannel;
+            client.OnMessageReceived -= Client_OnMessageReceived;
+            client.OnWhisperReceived -= Client_OnWhisperReceived;
+            client.OnChatCommandReceived -= Client_OnChatCommandReceived;
+            client.OnWhisperCommandReceived -= Client_OnWhisperCommandReceived;
+            client.OnConnected -= Client_OnConnected;
+            client.OnDisconnected -= Client_OnDisconnected;
+            client.OnLeftChannel -= Client_OnLeftChannel;
+
+            client.OnMessageSent -= Client_OnMessageSent;
+            client.OnWhisperSent -= Client_OnWhisperSent;
+            client.OnMessageThrottled -= Client_OnMessageThrottled;
+            client.OnWhisperThrottled -= Client_OnWhisperThrottled;
+            client.OnError -= Client_OnError;
+            client.OnConnectionError -= Client_OnConnectionError;
+
+            try
+            {
+                client.Disconnect();
+            }
+            catch { }
         }
 
         internal static TradeQueueInfo<T> Info => Hub.Queues.Info;

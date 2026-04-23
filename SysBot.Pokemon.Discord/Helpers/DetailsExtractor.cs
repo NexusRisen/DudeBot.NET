@@ -63,7 +63,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         if (settings.ShowEVs && !string.IsNullOrWhiteSpace(embedData.EVsDisplay)) statsList.Add($"**EVs:** {embedData.EVsDisplay}");
 
         // Column 3: Moves
-        string movesContent = embedData.MovesDisplay;
+        string movesContent = embedData.MovesDisplay ?? string.Empty;
 
         string speciesHeader = $"{embedData.SpeciesName}{(string.IsNullOrEmpty(embedData.FormName) ? "" : $"-{embedData.FormName}")} {embedData.SpecialSymbols}";
         embedBuilder.WithTitle(speciesHeader);

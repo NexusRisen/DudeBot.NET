@@ -10,13 +10,15 @@ using YouTube.Base.Clients;
 
 namespace SysBot.Pokemon.YouTube;
 
-public class YouTubeBot<T> where T : PKM, new()
+public class YouTubeBot<T> : IDisposable where T : PKM, new()
 {
     private readonly PokeTradeHub<T> Hub;
 
     private readonly YouTubeSettings Settings;
 
-    private ChatClient client;
+    private ChatClient? client;
+    private readonly CancellationTokenSource _cts = new();
+    private readonly Action<string> _echoForwarder;
 
     public YouTubeBot(YouTubeSettings settings, PokeTradeHub<T> hub)
     {
@@ -25,30 +27,48 @@ public class YouTubeBot<T> where T : PKM, new()
         Logger.LogOccurred += Logger_LogOccurred;
         client = default!;
 
+        _echoForwarder = msg => client?.SendMessage(msg);
+
         Task.Run(async () =>
         {
             try
             {
                 var connection = await YouTubeConnection.ConnectViaLocalhostOAuthBrowser(Settings.ClientID, Settings.ClientSecret, Scopes.scopes, true).ConfigureAwait(false);
-                if (connection == null)
+                if (connection == null || _cts.IsCancellationRequested)
                     return;
 
                 var channel = await connection.Channels.GetChannelByID(Settings.ChannelID).ConfigureAwait(false);
-                if (channel == null)
+                if (channel == null || _cts.IsCancellationRequested)
                     return;
 
                 client = new ChatClient(connection);
                 client.OnMessagesReceived += Client_OnMessagesReceived;
-                EchoUtil.Forwarders.Add(msg => client.SendMessage(msg));
+                EchoUtil.Forwarders.Add(_echoForwarder);
 
                 if (await client.Connect().ConfigureAwait(false))
-                    await Task.Delay(-1).ConfigureAwait(false);
+                {
+                    try { await Task.Delay(-1, _cts.Token).ConfigureAwait(false); } catch (OperationCanceledException) { }
+                }
             }
             catch (Exception ex)
             {
-                LogUtil.LogError(ex.Message, nameof(YouTubeBot<T>));
+                if (!_cts.IsCancellationRequested)
+                    LogUtil.LogError(ex.Message, nameof(YouTubeBot<T>));
             }
         });
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        Logger.LogOccurred -= Logger_LogOccurred;
+        if (client != null)
+        {
+            client.OnMessagesReceived -= Client_OnMessagesReceived;
+            EchoUtil.Forwarders.Remove(_echoForwarder);
+            try { client.Disconnect(); } catch { }
+        }
     }
 
     private TradeQueueInfo<T> Info => Hub.Queues.Info;

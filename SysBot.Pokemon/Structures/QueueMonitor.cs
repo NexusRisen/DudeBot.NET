@@ -6,11 +6,17 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon;
 
-public class QueueMonitor<T>(PokeTradeHub<T> Hub)
+public class QueueMonitor<T>(PokeTradeHub<T> Hub) : IDisposable
     where T : PKM, new()
 {
     // Action to be called when queue status changes: (isFull, currentCount, maxCount)
     public static Action<bool, int, int>? OnQueueStatusChanged { get; set; }
+
+    public void Dispose()
+    {
+        // No managed resources to dispose currently, but required by PokeBotRunner
+    }
+
     public async Task MonitorOpenQueue(CancellationToken token)
     {
         var queues = Hub.Queues.Info;

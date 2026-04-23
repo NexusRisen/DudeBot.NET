@@ -42,6 +42,14 @@ namespace SysBot.Pokemon.WinForms
             Load += async (sender, e) => {
                 await FetchAndDisplayChangelog();
                 labelChangelogTitle.Focus(); // Move focus away from the textbox to prevent auto-selection
+                
+                bool available = await UpdateChecker.IsDownloadAvailableAsync();
+                if (!available)
+                {
+                    buttonDownload.Enabled = false;
+                    buttonDownload.Text = "Not Available Yet";
+                    labelUpdateInfo.Text = "An update is listed, but the program files are not yet available for download. Please try again in a few minutes.";
+                }
             };
             UpdateFormText();
         }
@@ -169,13 +177,111 @@ namespace SysBot.Pokemon.WinForms
         private async Task FetchAndDisplayChangelog()
         {
             textBoxChangelog.Text = "Fetching changelog...";
-            textBoxChangelog.Text = await UpdateChecker.FetchChangelogAsync();
+            string changelog = await UpdateChecker.FetchChangelogAsync();
+            RenderMarkdown(changelog);
+        }
+
+        private void RenderMarkdown(string markdown)
+        {
+            textBoxChangelog.Clear();
+            if (string.IsNullOrWhiteSpace(markdown)) return;
+
+            string[] lines = markdown.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                ProcessLine(line);
+                textBoxChangelog.AppendText(Environment.NewLine);
+            }
+        }
+
+        private void ProcessLine(string line)
+        {
+            line = line.TrimEnd();
+            if (string.IsNullOrWhiteSpace(line)) return;
+
+            // Headers
+            if (line.StartsWith("### "))
+            {
+                AppendFormattedText(line[4..], new Font(textBoxChangelog.Font.FontFamily, 11, FontStyle.Bold), Color.FromArgb(0, 150, 255));
+                return;
+            }
+            if (line.StartsWith("## "))
+            {
+                AppendFormattedText(line[3..], new Font(textBoxChangelog.Font.FontFamily, 12, FontStyle.Bold), Color.FromArgb(0, 180, 255));
+                return;
+            }
+            if (line.StartsWith("# "))
+            {
+                AppendFormattedText(line[2..], new Font(textBoxChangelog.Font.FontFamily, 14, FontStyle.Bold), Color.FromArgb(0, 200, 255));
+                return;
+            }
+
+            // Lists
+            if (line.TrimStart().StartsWith("* ") || line.TrimStart().StartsWith("- "))
+            {
+                textBoxChangelog.SelectionBullet = true;
+                textBoxChangelog.SelectionIndent = 15;
+                string content = line.TrimStart()[2..];
+                ProcessInlineFormatting(content);
+                textBoxChangelog.SelectionBullet = false;
+                textBoxChangelog.SelectionIndent = 0;
+                return;
+            }
+
+            // Normal line with inline formatting
+            ProcessInlineFormatting(line);
+        }
+
+        private void ProcessInlineFormatting(string text)
+        {
+            int currentPos = 0;
+            while (currentPos < text.Length)
+            {
+                // Bold (**text**)
+                if (text.IndexOf("**", currentPos) == currentPos)
+                {
+                    int endPos = text.IndexOf("**", currentPos + 2);
+                    if (endPos != -1)
+                    {
+                        string boldText = text.Substring(currentPos + 2, endPos - (currentPos + 2));
+                        AppendFormattedText(boldText, new Font(textBoxChangelog.Font, FontStyle.Bold), textBoxChangelog.ForeColor);
+                        currentPos = endPos + 2;
+                        continue;
+                    }
+                }
+
+                // Append a single character and move forward
+                textBoxChangelog.AppendText(text[currentPos].ToString());
+                currentPos++;
+            }
+        }
+
+        private void AppendFormattedText(string text, Font font, Color color)
+        {
+            int start = textBoxChangelog.TextLength;
+            textBoxChangelog.AppendText(text);
+            int end = textBoxChangelog.TextLength;
+
+            textBoxChangelog.Select(start, end - start);
+            textBoxChangelog.SelectionFont = font;
+            textBoxChangelog.SelectionColor = color;
+            textBoxChangelog.SelectionLength = 0; // Deselect
         }
 
         private async void ButtonDownload_Click(object? sender, EventArgs? e)
         {
             buttonDownload.Enabled = false;
             buttonDownload.Text = "Initializing...";
+            
+            // Final check before initiating
+            bool available = await UpdateChecker.IsDownloadAvailableAsync();
+            if (!available)
+            {
+                MessageBox.Show("The program files for this update are not yet available on the server. Please check back later.", "Update Not Ready", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                buttonDownload.Text = "Not Available Yet";
+                return;
+            }
+
             progressBarDownload.Visible = true;
             labelProgress.Visible = true;
             progressBarDownload.Value = 0;

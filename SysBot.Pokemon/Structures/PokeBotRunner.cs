@@ -43,6 +43,9 @@ public abstract class PokeBotRunner<T> : RecoverableBotRunner<PokeBotState>, IPo
 
     private readonly BotFactory<T> Factory;
 
+    protected readonly List<IDisposable> Integrations = [];
+    protected readonly CancellationTokenSource IntegrationTokenSource = new();
+
     public event EventHandler BotStopped;
 
     public PokeTradeHubConfig Config => Hub.Config;
@@ -144,6 +147,13 @@ public abstract class PokeBotRunner<T> : RecoverableBotRunner<PokeBotState>, IPo
         // Raise the BotStopped event
         BotStopped?.Invoke(this, EventArgs.Empty);
 
+        IntegrationTokenSource.Cancel();
+        foreach (var integration in Integrations)
+        {
+            try { integration.Dispose(); } catch { }
+        }
+        Integrations.Clear();
+
         base.StopAll();
 
         // bots currently don't de-register
@@ -171,7 +181,9 @@ public abstract class PokeBotRunner<T> : RecoverableBotRunner<PokeBotState>, IPo
 
     private void AddTradeBotMonitors()
     {
-        Task.Run(async () => await new QueueMonitor<T>(Hub).MonitorOpenQueue(CancellationToken.None).ConfigureAwait(false));
+        var monitor = new QueueMonitor<T>(Hub);
+        Integrations.Add(monitor);
+        Task.Run(async () => await monitor.MonitorOpenQueue(IntegrationTokenSource.Token).ConfigureAwait(false));
 
         var path = Hub.Config.Folder.DistributeFolder;
         if (!Directory.Exists(path))
