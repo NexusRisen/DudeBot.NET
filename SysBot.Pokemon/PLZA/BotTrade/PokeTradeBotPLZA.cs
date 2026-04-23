@@ -2,6 +2,7 @@ using PKHeX.Core;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using SysBot.Base.Util;
+using SysBot.Pokemon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -288,7 +289,10 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         pokemon.OriginalTrainerGender = (byte)partner.Gender;
         pokemon.TrainerTID7 = (uint)Math.Abs(partner.DisplayTID);
         pokemon.TrainerSID7 = (uint)Math.Abs(partner.DisplaySID);
-        pokemon.OriginalTrainerName = partner.OT;
+
+        // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+        string otName = LanguageHelper.TruncateOTName(partner.OT, pokemon.Language);
+        pokemon.OriginalTrainerName = otName;
     }
 
     private async Task<PA9> ApplyAutoOT(PA9 toSend, TradePartnerStatusPLZA tradePartner, SAV9ZA sav, CancellationToken token)
@@ -325,22 +329,6 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         }
 
         bool isMysteryGift = toSend.FatefulEncounter;
-
-        // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        var legalitySettings = Hub.Config.Legality;
-        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
-                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
-                                     toSend.SID16 == legalitySettings.GenerateSID16;
-
-        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
-
-        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
-
-        if (isMysteryGift && !hasDefaultTrainerInfo)
-        {
-            return toSend;
-        }
-
         var cln = toSend.Clone();
 
         // Apply trainer info (OT, TID, SID, Gender)
@@ -348,20 +336,21 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
 
         if (!isMysteryGift)
         {
-            // Only override language if Pokemon has default/config language
-            // If user explicitly requested a different language, preserve it
-            var configLanguage = (int)legalitySettings.GenerateLanguage;
-            if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
+            // Preserve the originally requested language from the showdown set
+            // Only use trade partner's language if the original language is invalid
+            int originalLanguage = toSend.Language;
+            if (originalLanguage < 1 || originalLanguage > 12)
             {
-                cln.Language = toSend.Language; // Preserve explicitly requested language
-            }
-            else
-            {
-                // Validate language ID - if invalid, default to English (2)
+                // Original language is invalid, use trade partner's language
                 int language = tradePartner.Language;
                 if (language < 1 || language > 12) // Valid language IDs are 1-12
                     language = 2; // English
                 cln.Language = language;
+            }
+            else
+            {
+                // Preserve the user's explicitly requested language
+                cln.Language = originalLanguage;
             }
         }
 
@@ -410,15 +399,16 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         string name = tradePartner.OT;
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(name.Length, maxLength);
-
-        var charSpan = name.AsSpan(0, actualLength);
-        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
-        byteSpan.CopyTo(trash);
-
+        for (int i = 0; i < actualLength; i++)
+        {
+            char value = name[i];
+            trash[i * 2] = (byte)value;
+            trash[(i * 2) + 1] = (byte)(value >> 8);
+        }
         if (actualLength < maxLength)
         {
-            trash[actualLength * 2] = 0;
-            trash[actualLength * 2 + 1] = 0;
+            trash[actualLength * 2] = 0x00;
+            trash[(actualLength * 2) + 1] = 0x00;
         }
     }
 
@@ -605,6 +595,10 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
             return;
         }
 
+        // Use MenuState to determine whether to disconnect or navigate back
+        int timeoutSeconds = 30;
+        int elapsedExit = 0;
+
         // If we're in the Box or searching for a Link Trade, we need to use the BAB approach, otherwise we can just mash B.
         var remainMs = 120_000;
         while (await GetMenuState(token).ConfigureAwait(false) >= MenuState.LinkTrade)
@@ -667,8 +661,9 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
 
             // Read gender and language from TID location offset
             var genderLang = await SwitchConnection.ReadBytesAbsoluteAsync(tidAddr, 0x08, token).ConfigureAwait(false);
-            trader_info.Data[0x04] = genderLang[0x04]; // Gender at TID base + 0x04
-            trader_info.Data[0x05] = genderLang[0x05]; // Language at TID base + 0x05
+            trader_info.Data[0x04] = genderLang[0x05]; // Gender at TID base + 0x05
+            trader_info.Data[0x05] = genderLang[0x07]; // Language at TID base + 0x07
+
         }
         else
         {

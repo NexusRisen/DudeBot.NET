@@ -246,7 +246,10 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             cln.OriginalTrainerGender = (byte)tradePartner.Gender;
             cln.TrainerTID7 = (uint)Math.Abs(tradePartner.DisplayTID);
             cln.TrainerSID7 = (uint)Math.Abs(tradePartner.DisplaySID);
-            cln.OriginalTrainerName = tradePartner.OT;
+
+            // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+            string otName = LanguageHelper.TruncateOTName(tradePartner.OT, cln.Language);
+            cln.OriginalTrainerName = otName;
         }
         else
         {
@@ -254,19 +257,23 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             cln.TrainerTID7 = (uint)Math.Abs(tradePartner.DisplayTID);
             cln.TrainerSID7 = (uint)Math.Abs(tradePartner.DisplaySID);
 
-            // Only override language if Pokemon has default/config language
-            // If user explicitly requested a different language, preserve it
-            var configLanguage = (int)legalitySettings.GenerateLanguage;
-            if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
+            // Preserve the originally requested language from the showdown set
+            // Only use trade partner's language if the original language is invalid
+            int originalLanguage = toSend.Language;
+            if (originalLanguage < 1 || originalLanguage > 12)
             {
-                cln.Language = toSend.Language; // Preserve explicitly requested language
+                // Original language is invalid, use trade partner's language
+                cln.Language = tradePartner.Language;
             }
             else
             {
-                cln.Language = tradePartner.Language; // Use trade partner's language
+                // Preserve the user's explicitly requested language
+                cln.Language = originalLanguage;
             }
 
-            cln.OriginalTrainerName = tradePartner.OT;
+            // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+            string otName = LanguageHelper.TruncateOTName(tradePartner.OT, cln.Language);
+            cln.OriginalTrainerName = otName;
         }
 
         ClearOTTrash(cln, tradePartner);

@@ -884,25 +884,6 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
         var tradeDetails = tradeCodeStorage.GetTradeDetails(trainerID);
         if (tradeDetails != null)
         {
-            // Check if the Pokémon is from a Mystery Gift
-            bool isMysteryGift = toSend.FatefulEncounter;
-
-            // Check if Mystery Gift has legitimate preset OT/TID/SID (not configured defaults)
-            var legalitySettings = Hub.Config.Legality;
-            bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
-                                         toSend.TID16 == legalitySettings.GenerateTID16 &&
-                                         toSend.SID16 == legalitySettings.GenerateSID16;
-
-            bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
-
-            bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
-
-            if (isMysteryGift && !hasDefaultTrainerInfo)
-            {
-                Log("Mystery Gift with preset OT/TID/SID detected. Skipping AutoOT entirely.");
-                return Task.FromResult<PB7?>(toSend);
-            }
-
             var cln = toSend.Clone();
 #pragma warning disable CS8601 // Possible null reference assignment.
             cln.OriginalTrainerName = tradeDetails.OT;
@@ -910,19 +891,17 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
             cln.SetDisplayTID((uint)tradeDetails.TID);
             cln.SetDisplaySID((uint)tradeDetails.SID);
 
-            if (!isMysteryGift)
-            {
-                // Only override language if Pokemon has default/config language
-                var configLanguage = (int)legalitySettings.GenerateLanguage;
-                if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
-                {
-                    cln.Language = toSend.Language; // Preserve explicitly requested language
-                }
-                else
-                {
-                    cln.Language = (int)LanguageID.English; // Default to English for LGPE if not specified
-                }
-            }
+            // Preserve the originally requested language from the showdown set
+            // Only default to English if the original language is invalid
+            int originalLanguage = toSend.Language;
+            if (originalLanguage < 1 || originalLanguage > 12)
+                cln.Language = (int)LanguageID.English; // Default to English if invalid
+            else
+                cln.Language = originalLanguage; // Preserve user's requested language
+
+            // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+            string otName = LanguageHelper.TruncateOTName(tradeDetails.OT ?? "", cln.Language);
+            cln.OriginalTrainerName = otName;
 
             ClearOTTrash(cln, tradeDetails);
 
@@ -967,15 +946,16 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
         string name = tradeDetails.OT;
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(name.Length, maxLength);
-
-        var charSpan = name.AsSpan(0, actualLength);
-        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
-        byteSpan.CopyTo(trash);
-
+        for (int i = 0; i < actualLength; i++)
+        {
+            char value = name[i];
+            trash[i * 2] = (byte)value;
+            trash[(i * 2) + 1] = (byte)(value >> 8);
+        }
         if (actualLength < maxLength)
         {
-            trash[actualLength * 2] = 0;
-            trash[actualLength * 2 + 1] = 0;
+            trash[actualLength * 2] = 0x00;
+            trash[(actualLength * 2) + 1] = 0x00;
         }
     }
 }

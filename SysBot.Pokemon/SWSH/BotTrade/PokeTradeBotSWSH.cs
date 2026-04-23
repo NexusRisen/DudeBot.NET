@@ -1521,6 +1521,7 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
         return $"{tidsid % 1_000_000:000000}";
     }
 
+    // Thanks Secludely https://github.com/Secludedly/ZE-FusionBot/commit/f064d9eaf11ba2b2a0a79fa4c7ec5bf6dacf780c
     private async Task<string> GetTradePartnerSID7(TradeMethod tradeMethod, CancellationToken token)
     {
         var ofs = GetTrainerTIDSIDOffset(tradeMethod);
@@ -1674,24 +1675,13 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
             return toSend;
         }
 
-        if (toSend.Generation != toSend.Format)
-        {
-            Log("Cannot apply Partner details: Current handler cannot be different gen OT.");
-            return toSend;
-        }
-
         // Check if the Pokémon is from a Mystery Gift
         bool isMysteryGift = toSend.FatefulEncounter;
 
         // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        var legalitySettings = hub.Config.Legality;
-        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
-                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
-                                     toSend.SID16 == legalitySettings.GenerateSID16;
-
-        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
-
-        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
+        bool hasDefaultTrainerInfo = toSend.OriginalTrainerName.Equals("DudeBot", StringComparison.OrdinalIgnoreCase) &&
+                                    toSend.TID16 == 12345 &&
+                                    toSend.SID16 == 54321;
 
         if (isMysteryGift && !hasDefaultTrainerInfo)
         {
@@ -1710,7 +1700,10 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
             cln.OriginalTrainerGender = data[6];
             cln.TrainerTID7 = tidsid % 1_000_000;
             cln.TrainerSID7 = tidsid / 1_000_000;
-            cln.OriginalTrainerName = trainerName;
+
+            // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+            string otName = LanguageHelper.TruncateOTName(trainerName, cln.Language);
+            cln.OriginalTrainerName = otName;
         }
         else
         {
@@ -1719,25 +1712,18 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
             cln.TrainerTID7 = tidsid % 1_000_000;
             cln.TrainerSID7 = tidsid / 1_000_000;
 
-            // Only override language if Pokemon has default/config language
-            // If user explicitly requested a different language, preserve it
-            var configLanguage = (int)legalitySettings.GenerateLanguage;
-            if (toSend.Language != configLanguage && toSend.Language >= 1 && toSend.Language <= 12)
-            {
-                cln.Language = toSend.Language; // Preserve explicitly requested language
-            }
+            // Preserve the originally requested language from the showdown set
+            // Only use trade partner's language if the original language is invalid
+            int originalLanguage = toSend.Language;
+            if (originalLanguage < 1 || originalLanguage > 12)
+                cln.Language = data[5]; // Use trade partner's language if invalid
             else
-            {
-                cln.Language = data[5]; // Use trade partner's language
-            }
+                cln.Language = originalLanguage; // Preserve user's requested language
 
-            cln.OriginalTrainerName = trainerName;
+            // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
+            string otName = LanguageHelper.TruncateOTName(trainerName, cln.Language);
+            cln.OriginalTrainerName = otName;
         }
-
-        // Apply Game Version if it looks valid (Sword=34, Shield=35)
-        byte version = data[4];
-        if (version == 34 || version == 35)
-            cln.Version = (GameVersion)version;
 
         ClearOTTrash(cln, trainerName);
 
@@ -1770,15 +1756,16 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
         trash.Clear();
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(trainerName.Length, maxLength);
-
-        var charSpan = trainerName.AsSpan(0, actualLength);
-        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
-        byteSpan.CopyTo(trash);
-
+        for (int i = 0; i < actualLength; i++)
+        {
+            char value = trainerName[i];
+            trash[i * 2] = (byte)value;
+            trash[(i * 2) + 1] = (byte)(value >> 8);
+        }
         if (actualLength < maxLength)
         {
-            trash[actualLength * 2] = 0;
-            trash[actualLength * 2 + 1] = 0;
+            trash[actualLength * 2] = 0x00;
+            trash[(actualLength * 2) + 1] = 0x00;
         }
     }
 }
