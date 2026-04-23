@@ -27,7 +27,6 @@
     <Authors>Kaphotics, Nexus Risen</Authors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Resources.Extensions" Version="9.0.4" />
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Discord\SysBot.Pokemon.Discord.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />

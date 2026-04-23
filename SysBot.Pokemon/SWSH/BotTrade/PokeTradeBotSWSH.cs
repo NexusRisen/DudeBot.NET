@@ -1679,9 +1679,14 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
         bool isMysteryGift = toSend.FatefulEncounter;
 
         // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        bool hasDefaultTrainerInfo = toSend.OriginalTrainerName.Equals("DudeBot", StringComparison.OrdinalIgnoreCase) &&
-                                    toSend.TID16 == 12345 &&
-                                    toSend.SID16 == 54321;
+        var legalitySettings = hub.Config.Legality;
+        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                     toSend.SID16 == legalitySettings.GenerateSID16;
+
+        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
 
         if (isMysteryGift && !hasDefaultTrainerInfo)
         {
@@ -1715,10 +1720,12 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState config) : Poke
             // Preserve the originally requested language from the showdown set
             // Only use trade partner's language if the original language is invalid
             int originalLanguage = toSend.Language;
-            if (originalLanguage < 1 || originalLanguage > 12)
-                cln.Language = data[5]; // Use trade partner's language if invalid
-            else
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+            if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
                 cln.Language = originalLanguage; // Preserve user's requested language
+            else if (originalLanguage < 1 || originalLanguage > 12)
+                cln.Language = data[5]; // Use trade partner's language if invalid
+            // else: use current (config) language
 
             // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
             string otName = LanguageHelper.TruncateOTName(trainerName, cln.Language);

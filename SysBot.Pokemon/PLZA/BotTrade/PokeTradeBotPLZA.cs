@@ -329,6 +329,22 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         }
 
         bool isMysteryGift = toSend.FatefulEncounter;
+
+        // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
+        var legalitySettings = Hub.Config.Legality;
+        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                     toSend.SID16 == legalitySettings.GenerateSID16;
+
+        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
+
+        if (isMysteryGift && !hasDefaultTrainerInfo)
+        {
+            return toSend;
+        }
+
         var cln = toSend.Clone();
 
         // Apply trainer info (OT, TID, SID, Gender)
@@ -339,7 +355,14 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
             // Preserve the originally requested language from the showdown set
             // Only use trade partner's language if the original language is invalid
             int originalLanguage = toSend.Language;
-            if (originalLanguage < 1 || originalLanguage > 12)
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+
+            if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
+            {
+                // Preserve the user's explicitly requested language
+                cln.Language = originalLanguage;
+            }
+            else if (originalLanguage < 1 || originalLanguage > 12)
             {
                 // Original language is invalid, use trade partner's language
                 int language = tradePartner.Language;
@@ -347,11 +370,7 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
                     language = 2; // English
                 cln.Language = language;
             }
-            else
-            {
-                // Preserve the user's explicitly requested language
-                cln.Language = originalLanguage;
-            }
+            // else: use current (config) language
         }
 
         ClearOTTrash(cln, tradePartner);
@@ -594,10 +613,6 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
             _wasConnectedToPartner = false; // Reset flag when successfully back to overworld
             return;
         }
-
-        // Use MenuState to determine whether to disconnect or navigate back
-        int timeoutSeconds = 30;
-        int elapsedExit = 0;
 
         // If we're in the Box or searching for a Link Trade, we need to use the BAB approach, otherwise we can just mash B.
         var remainMs = 120_000;

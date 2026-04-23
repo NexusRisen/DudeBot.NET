@@ -95,6 +95,7 @@ public sealed partial class Main : Form
             LogConfig.LoggingEnabled = Config.Hub.LoggingEnabled;
             CB_Mode.SelectedValue = (int)Config.Mode;
             RunningEnvironment = GetRunner(Config);
+            Config.Hub.Legality.CreateDefaults(Program.WorkingDirectory);
             foreach (var bot in Config.Bots)
             {
                 bot.Initialize();

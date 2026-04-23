@@ -175,7 +175,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         embedData.Nature = GetNatureName(pk, strings);
 
         // Extract Stat Nature if it differs from regular Nature
-        if (pk.StatNature != pk.Nature)
+        if (pk.StatNature != pk.Nature && strings.natures != null)
         {
             embedData.StatNature = strings.natures[(int)pk.StatNature];
         }
@@ -255,7 +255,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         embedData.MetLevel = pk.MetLevel;
         var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
         embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"**ID:** {pk.MetLocation}" : $"{metLocationName} **(ID: {pk.MetLocation})**";
-        embedData.MovesDisplay = string.Join("\n", embedData.Moves);
+        embedData.MovesDisplay = embedData.Moves != null ? string.Join("\n", embedData.Moves) : string.Empty;
         embedData.PokemonDisplayName = pk.IsNicknamed ? pk.Nickname : embedData.SpeciesName;
 
         embedData.TradeTitle = GetTradeTitle(isMysteryEgg, isCloneRequest, isDumpRequest, isFixOTRequest, isSpecialRequest, isBatchTrade, batchTradeNumber, embedData.PokemonDisplayName, pk.IsShiny);

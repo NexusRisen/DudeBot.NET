@@ -260,16 +260,18 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             // Preserve the originally requested language from the showdown set
             // Only use trade partner's language if the original language is invalid
             int originalLanguage = toSend.Language;
-            if (originalLanguage < 1 || originalLanguage > 12)
-            {
-                // Original language is invalid, use trade partner's language
-                cln.Language = tradePartner.Language;
-            }
-            else
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+            if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
             {
                 // Preserve the user's explicitly requested language
                 cln.Language = originalLanguage;
             }
+            else if (originalLanguage < 1 || originalLanguage > 12)
+            {
+                // Original language is invalid, use trade partner's language
+                cln.Language = tradePartner.Language;
+            }
+            // else: use current (config) language
 
             // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
             string otName = LanguageHelper.TruncateOTName(tradePartner.OT, cln.Language);

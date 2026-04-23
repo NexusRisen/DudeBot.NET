@@ -246,9 +246,14 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
         bool isMysteryGift = toSend.FatefulEncounter;
 
         // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        bool hasDefaultTrainerInfo = toSend.OriginalTrainerName.Equals("DudeBot", StringComparison.OrdinalIgnoreCase) &&
-                                   toSend.TID16 == 12345 &&
-                                    toSend.SID16 == 54321;
+        var legalitySettings = Hub.Config.Legality;
+        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                     toSend.SID16 == legalitySettings.GenerateSID16;
+
+        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
 
         if (isMysteryGift && !hasDefaultTrainerInfo)
         {
@@ -274,6 +279,16 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
             // Apply all trade partner details for non-Mystery Gift Pokémon
             cln.TrainerTID7 = trainerTID7;
             cln.TrainerSID7 = trainerSID7;
+
+            // Preserve the originally requested language from the showdown set
+            // Only use trade partner's language if the original language is invalid
+            int originalLanguage = toSend.Language;
+            var configLanguage = (int)legalitySettings.GenerateLanguage;
+            if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
+            {
+                cln.Language = originalLanguage; // Preserve user's requested language
+            }
+            // else: keep current/partner language
 
             // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
             string otName = LanguageHelper.TruncateOTName(tradePartner, cln.Language);
@@ -1102,12 +1117,9 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
         }
 
         // As long as we got rid of our inject in b1s1, assume the trade went through.
-        // As long as we got rid of our inject in b1s1, assume the trade went through.
         Log("User completed the trade.");
         poke.TradeFinished(this, received);
         TradeProgressChanged?.Invoke(100);
-
-        poke.TradeFinished(this, received);
 
         // Only log if we completed the trade.
         UpdateCountsAndExport(poke, received, toSend);
