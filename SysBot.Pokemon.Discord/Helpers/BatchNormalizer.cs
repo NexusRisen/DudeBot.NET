@@ -100,29 +100,22 @@ namespace SysBot.Pokemon.Discord.Helpers
 
         // Alcremie topping keywords
         private static readonly Dictionary<string, int> AlcremieFormArguments = new(StringComparer.OrdinalIgnoreCase)
-    {
-    { "Strawberry", 0 },
-    { "Berry", 1 },
-    { "Love", 2 },
-    { "Star", 3 },
-    { "Clover", 4 },
-    { "Flower", 5 },
-    { "Ribbon", 6 }
-    };
+        {
+            { "Strawberry", 0 },
+            { "Berry", 1 },
+            { "Love", 2 },
+            { "Star", 3 },
+            { "Clover", 4 },
+            { "Flower", 5 },
+            { "Ribbon", 6 }
+        };
 
         //////////////////////////////////// MAIN ENTRY //////////////////////////////////////
 
         public static string NormalizeBatchCommands(string input)
         {
-            var lines = input.Split('\n');
+            var lines = input.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
             var processed = new List<string>();
-
-            // Check if first line has a nickname in parentheses (e.g., "Pikachu (Nick)")
-            if (lines.Length > 0)
-            {
-                var firstLine = lines[0].Trim();
-                
-            }
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -130,28 +123,46 @@ namespace SysBot.Pokemon.Discord.Helpers
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
-                if (!line.Contains(":"))
+                if (!line.Contains(':'))
                 {
                     // Alcremie forms can now add a topping to the flavor without batch command
-                    // For example, it accepts: Alcremie-Caramel-Swirl-Ribbon
+                    // For example, it accepts: Alcremie-Caramel-Swirl-Ribbon or Nickname (Alcremie-Ruby-Cream-Strawberry)
                     // Just affix the topping name to the end of Alcremie's name after its flavor
-                    // This code injects FormArgument/Topping for Alcremie based on Showdown Format nickname
-                    if (line.StartsWith("Alcremie-", StringComparison.OrdinalIgnoreCase))
+                    // This code injects FormArgument/Topping for Alcremie based on Showdown Format species/nickname
+                    if (line.Contains("Alcremie-", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Separate the item suffix (everything from '@' onward) before parsing the form.
                         var atIndex = line.IndexOf('@');
-                        var speciesPart = atIndex >= 0 ? line[..atIndex].Trim() : line;
+                        var speciesAndNicknamePart = atIndex >= 0 ? line[..atIndex].Trim() : line;
                         var itemSuffix = atIndex >= 0 ? " @ " + line[(atIndex + 1)..].Trim() : string.Empty;
 
-                        var parts = speciesPart.Split('-', StringSplitOptions.RemoveEmptyEntries);
-                        var lastPart = parts.Last();
+                        // Check for nickname format: Nickname (Species)
+                        var nickMatch = Regex.Match(speciesAndNicknamePart, @"^.*?\((Alcremie-.*?)\)$", RegexOptions.IgnoreCase);
+                        var speciesPart = nickMatch.Success ? nickMatch.Groups[1].Value : speciesAndNicknamePart;
 
-                        if (AlcremieFormArguments.TryGetValue(lastPart, out int arg))
+                        if (speciesPart.StartsWith("Alcremie-", StringComparison.OrdinalIgnoreCase))
                         {
-                            var speciesName = string.Join("-", parts.Take(parts.Length - 1));
-                            processed.Add(speciesName + itemSuffix);
-                            processed.Add($".FormArgument={arg}");
-                            continue;
+                            var parts = speciesPart.Split('-', StringSplitOptions.RemoveEmptyEntries);
+                            var lastPart = parts.Last();
+
+                            if (AlcremieFormArguments.TryGetValue(lastPart, out int arg))
+                            {
+                                var speciesNameOnly = string.Join("-", parts.Take(parts.Length - 1));
+
+                                string newLine;
+                                if (nickMatch.Success)
+                                {
+                                    var nickname = speciesAndNicknamePart[..speciesAndNicknamePart.IndexOf('(')].Trim();
+                                    newLine = $"{nickname} ({speciesNameOnly}){itemSuffix}";
+                                }
+                                else
+                                {
+                                    newLine = speciesNameOnly + itemSuffix;
+                                }
+
+                                processed.Add(newLine);
+                                processed.Add($".FormArgument={arg}");
+                                continue;
+                            }
                         }
                     }
 
