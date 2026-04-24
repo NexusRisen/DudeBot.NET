@@ -63,12 +63,13 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         name: DudeBot.NET V6.0.3
+        body_path: RELEASE_NOTES.md
         files: |
           artifacts/dudebot-win-x64/dudebot-win-x64.zip
           artifacts/dudebot-win-x86/dudebot-win-x86.zip
           artifacts/dudebot-win-x64/dudebot-x64.exe
           artifacts/dudebot-win-x86/dudebot-x86.exe
-        generate_release_notes: true
+        generate_release_notes: false
         draft: false
         prerelease: false
       env:
