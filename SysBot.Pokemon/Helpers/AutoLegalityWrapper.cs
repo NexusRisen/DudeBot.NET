@@ -163,6 +163,7 @@ public static class AutoLegalityWrapper
         IFixedTrainer { IsFixedTrainer: true } => true,
         MysteryGift g => !g.IsEgg && g switch
         {
+            WA9 wa9 => wa9.GetHasOT(pkm.Language),
             WC9 wc9 => wc9.GetHasOT(pkm.Language),
             WA8 wa8 => wa8.GetHasOT(pkm.Language),
             WB8 wb8 => wb8.GetHasOT(pkm.Language),
@@ -187,7 +188,7 @@ public static class AutoLegalityWrapper
         if (typeof(T) == typeof(PA9))
             return TrainerSettings.GetSavedTrainerData(GameVersion.ZA);
         if (typeof(T) == typeof(PB7))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.GE);
+            return TrainerSettings.GetSavedTrainerData(GameVersion.GG);
 
         throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name);
     }
