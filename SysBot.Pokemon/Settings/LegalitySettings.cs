@@ -103,11 +103,10 @@ public class LegalitySettings
 
     public void CreateDefaults(string path)
     {
-        var trainer = Path.Combine(path, "trainers");
-        if (!Directory.Exists(GeneratePathTrainerInfo))
-        {
-            Directory.CreateDirectory(trainer);
-        }
-        GeneratePathTrainerInfo = trainer;
+        var trainerPath = Path.Combine(path, "trainers");
+        if (!Directory.Exists(trainerPath))
+            Directory.CreateDirectory(trainerPath);
+
+        GeneratePathTrainerInfo = trainerPath;
     }
-    }
+}

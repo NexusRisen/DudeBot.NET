@@ -30,8 +30,8 @@ public static class LanguageHelper
         var langID = (LanguageID)pkm.Language;
         var langName = GetLanguageName(langID);
 
-        string localizedName = TryGetSpeciesName(pkm.Species, langID);
-        string englishName = TryGetSpeciesName(pkm.Species, LanguageID.English);
+        string localizedName = GetLocalizedSpeciesName(pkm.Species, langID);
+        string englishName = GetLocalizedSpeciesName(pkm.Species, LanguageID.English);
 
         if (langID == LanguageID.English || localizedName == englishName)
             return englishName;
@@ -39,25 +39,10 @@ public static class LanguageHelper
         return $"{localizedName} ({englishName}, {langName})";
     }
 
-    private static string TryGetSpeciesName(int speciesIndex, LanguageID lang)
-    {
-        try
-        {
-            var strings = GameInfo.GetStrings("lang");
-            if (strings?.Species == null || speciesIndex < 0 || speciesIndex >= strings.Species.Count)
-                return "???";
-
-            return strings.Species[speciesIndex];
-        }
-        catch
-        {
-            return "???";
-        }
-    }
     public static byte GetFinalLanguage(string content, ShowdownSet? set, byte configLanguage, Func<string, byte> detectLanguageFunc)
     {
         // Check if user explicitly specified a language in the showdown set
-        var lines = content.Split('\n', StringSplitOptions.TrimEntries);
+        var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var line in lines)
         {
             if (line.StartsWith("Language:", StringComparison.OrdinalIgnoreCase))
@@ -66,30 +51,26 @@ public static class LanguageHelper
 
                 // Try to parse as LanguageID enum
                 if (Enum.TryParse<LanguageID>(languageValue, true, out var langId))
-                {
                     return (byte)langId;
-                }
 
                 // Handle common language names
-                var explicitLang = languageValue.ToLower() switch
+                var explicitLang = languageValue.ToLowerInvariant() switch
                 {
-                    "japanese" or "jpn" or "日本語" => (byte)LanguageID.Japanese,
-                    "english" or "eng" => (byte)LanguageID.English,
-                    "french" or "fre" or "fra" => (byte)LanguageID.French,
-                    "italian" or "ita" => (byte)LanguageID.Italian,
-                    "german" or "ger" or "deu" => (byte)LanguageID.German,
-                    "spanish" or "spa" or "esp" => (byte)LanguageID.Spanish,
-                    "spanish-latam" or "spanishl" or "es-419" or "latam" => (byte)LanguageID.SpanishL,
-                    "korean" or "kor" or "한국어" => (byte)LanguageID.Korean,
-                    "chinese" or "chs" or "中文" => (byte)LanguageID.ChineseS,
-                    "cht" => (byte)LanguageID.ChineseT,
-                    _ => 0
+                    "japanese" or "jpn" or "日本語" => LanguageID.Japanese,
+                    "english" or "eng" => LanguageID.English,
+                    "french" or "fre" or "fra" => LanguageID.French,
+                    "italian" or "ita" => LanguageID.Italian,
+                    "german" or "ger" or "deu" => LanguageID.German,
+                    "spanish" or "spa" or "esp" => LanguageID.Spanish,
+                    "spanish-latam" or "spanishl" or "es-419" or "latam" => LanguageID.SpanishL,
+                    "korean" or "kor" or "한국어" => LanguageID.Korean,
+                    "chinese" or "chs" or "中文" => LanguageID.ChineseS,
+                    "cht" => LanguageID.ChineseT,
+                    _ => LanguageID.None
                 };
 
-                if (explicitLang != 0)
-                {
+                if (explicitLang != LanguageID.None)
                     return (byte)explicitLang;
-                }
             }
         }
 
@@ -97,61 +78,48 @@ public static class LanguageHelper
         byte detectedLanguage = detectLanguageFunc(content);
 
         // If no language was detected (0), use the config language setting
-        if (detectedLanguage == 0)
-        {
-            return configLanguage;
-        }
-
-        return detectedLanguage;
+        return detectedLanguage == 0 ? configLanguage : detectedLanguage;
     }
 
     public static ITrainerInfo GetTrainerInfoWithLanguage<T>(LanguageID language) where T : PKM, new()
     {
-        return typeof(T) switch
+        var version = typeof(T) switch
         {
-            Type t when t == typeof(PK8) => TrainerSettings.GetSavedTrainerData(GameVersion.SWSH, language),
-            Type t when t == typeof(PB8) => TrainerSettings.GetSavedTrainerData(GameVersion.BDSP, language),
-            Type t when t == typeof(PA8) => TrainerSettings.GetSavedTrainerData(GameVersion.PLA, language),
-            Type t when t == typeof(PK9) => TrainerSettings.GetSavedTrainerData(GameVersion.SV, language),
-            Type t when t == typeof(PA9) => TrainerSettings.GetSavedTrainerData(GameVersion.ZA, language),
-            Type t when t == typeof(PB7) => TrainerSettings.GetSavedTrainerData(GameVersion.GG, language),
+            Type t when t == typeof(PK8) => GameVersion.SWSH,
+            Type t when t == typeof(PB8) => GameVersion.BDSP,
+            Type t when t == typeof(PA8) => GameVersion.PLA,
+            Type t when t == typeof(PK9) => GameVersion.SV,
+            Type t when t == typeof(PA9) => GameVersion.ZA,
+            Type t when t == typeof(PB7) => GameVersion.GG,
             _ => throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name)
         };
+        return TrainerSettings.GetSavedTrainerData(version, language);
     }
 
-    public static string GetLanguageName(LanguageID lang)
+    public static string GetLanguageName(LanguageID lang) => lang switch
     {
-        return lang switch
-        {
-            LanguageID.Japanese => "Japanese",
-            LanguageID.English => "English",
-            LanguageID.French => "French",
-            LanguageID.Italian => "Italian",
-            LanguageID.German => "German",
-            LanguageID.Spanish => "Spanish",
-            LanguageID.SpanishL => "SpanishL",
-            LanguageID.Korean => "Korean",
-            LanguageID.ChineseT => "Chinese (Traditional)",
-            LanguageID.ChineseS => "Chinese (Simplified)",
-            _ => "Unknown"
-        };
-    }
+        LanguageID.Japanese => "Japanese",
+        LanguageID.English => "English",
+        LanguageID.French => "French",
+        LanguageID.Italian => "Italian",
+        LanguageID.German => "German",
+        LanguageID.Spanish => "Spanish",
+        LanguageID.SpanishL => "SpanishL",
+        LanguageID.Korean => "Korean",
+        LanguageID.ChineseT => "Chinese (Traditional)",
+        LanguageID.ChineseS => "Chinese (Simplified)",
+        _ => "Unknown"
+    };
 
     /// <summary>
     /// Determines if a language uses Asian characters (which have a 6-character limit for OT names).
     /// </summary>
-    public static bool IsAsianLanguage(LanguageID lang)
-    {
-        return lang is LanguageID.Japanese or LanguageID.Korean or LanguageID.ChineseS or LanguageID.ChineseT;
-    }
+    public static bool IsAsianLanguage(LanguageID lang) => lang is LanguageID.Japanese or LanguageID.Korean or LanguageID.ChineseS or LanguageID.ChineseT;
 
     /// <summary>
     /// Determines if a language uses Asian characters based on language code.
     /// </summary>
-    public static bool IsAsianLanguage(int languageCode)
-    {
-        return languageCode is 1 or 8 or 9 or 10; // Japanese, Korean, ChineseS, ChineseT
-    }
+    public static bool IsAsianLanguage(int languageCode) => IsAsianLanguage((LanguageID)languageCode);
 
     /// <summary>
     /// Truncates OT name to the appropriate length based on language.
@@ -172,12 +140,5 @@ public static class LanguageHelper
     /// Asian languages (Japanese, Korean, Chinese) have a 6-character limit.
     /// Latin-based languages have a 12-character limit.
     /// </summary>
-    public static string TruncateOTName(string otName, int languageCode)
-    {
-        if (string.IsNullOrEmpty(otName))
-            return otName;
-
-        int maxLength = IsAsianLanguage(languageCode) ? 6 : 12;
-        return otName.Length > maxLength ? otName[..maxLength] : otName;
-    }
+    public static string TruncateOTName(string otName, int languageCode) => TruncateOTName(otName, (LanguageID)languageCode);
 }

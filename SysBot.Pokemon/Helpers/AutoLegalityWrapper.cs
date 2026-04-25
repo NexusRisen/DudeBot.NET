@@ -94,8 +94,6 @@ public static class AutoLegalityWrapper
         var fallback = GetDefaultTrainer(cfg);
         for (byte generation = 1; generation <= 9; generation++)
         {
-            // Convert the byte generation into an EntityContext via a representative GameVersion for that generation
-            var representativeVersion = GameUtil.GetVersion(generation);
             var versions = GameUtil.GetVersionsInGeneration(generation, GameVersion.Any);
             foreach (var version in versions)
             {
@@ -120,23 +118,23 @@ public static class AutoLegalityWrapper
 
     private static SimpleTrainerInfo GetDefaultTrainer(LegalitySettings cfg)
     {
-        var OT = cfg.GenerateOT;
-        if (OT.Length == 0)
-            OT = "Blank"; // Will fail if actually left blank.
-        var fallback = new SimpleTrainerInfo(GameVersion.Any)
+        var ot = cfg.GenerateOT;
+        if (string.IsNullOrWhiteSpace(ot))
+            ot = "Blank";
+
+        return new SimpleTrainerInfo(GameVersion.Any)
         {
             Language = (byte)cfg.GenerateLanguage,
             TID16 = cfg.GenerateTID16,
             SID16 = cfg.GenerateSID16,
-            OT = OT,
+            OT = ot,
             Generation = 0,
         };
-        return fallback;
     }
 
-    private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version, EntityContext context)   
+    private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version, EntityContext context)
     {
-        fallback = new SimpleTrainerInfo(version)
+        var info = new SimpleTrainerInfo(version)
         {
             Language = fallback.Language,
             TID16 = fallback.TID16,
@@ -144,10 +142,11 @@ public static class AutoLegalityWrapper
             OT = fallback.OT,
             Generation = generation,
         };
+
         // Pass the version as the second argument and the fallback as the third to match the overload
-        var exist = TrainerSettings.GetSavedTrainerData(context, version, fallback);
+        var exist = TrainerSettings.GetSavedTrainerData(context, version, info);
         if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
-            TrainerSettings.Register(fallback);
+            TrainerSettings.Register(info);
     }
 
     private static void InitializeCoreStrings()
@@ -189,20 +188,17 @@ public static class AutoLegalityWrapper
 
     public static ITrainerInfo GetTrainerInfo<T>() where T : PKM, new()
     {
-        if (typeof(T) == typeof(PK8))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.SWSH);
-        if (typeof(T) == typeof(PB8))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.BDSP);
-        if (typeof(T) == typeof(PA8))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.PLA);
-        if (typeof(T) == typeof(PK9))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.SV);
-        if (typeof(T) == typeof(PA9))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.ZA);
-        if (typeof(T) == typeof(PB7))
-            return TrainerSettings.GetSavedTrainerData(GameVersion.GG);
-
-        throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name);
+        var version = typeof(T) switch
+        {
+            Type t when t == typeof(PK8) => GameVersion.SWSH,
+            Type t when t == typeof(PB8) => GameVersion.BDSP,
+            Type t when t == typeof(PA8) => GameVersion.PLA,
+            Type t when t == typeof(PK9) => GameVersion.SV,
+            Type t when t == typeof(PA9) => GameVersion.ZA,
+            Type t when t == typeof(PB7) => GameVersion.GG,
+            _ => throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name)
+        };
+        return TrainerSettings.GetSavedTrainerData(version);
     }
 
     // Change GetTrainerInfo(byte) to convert generation byte to an EntityContext before calling TrainerSettings
