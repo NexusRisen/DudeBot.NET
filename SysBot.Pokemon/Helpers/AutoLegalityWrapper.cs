@@ -24,7 +24,7 @@ public static class AutoLegalityWrapper
     private static void InitializeAutoLegality(LegalitySettings cfg)
     {
         InitializeCoreStrings();
-        // Updated to convert the string to a ReadOnlySpan<string> array as required by the method signature.
+        // Updated to convert the string to a ReadOnlySpan<string> array as required by the method signature.   
         EncounterEvent.RefreshMGDB([cfg.MGDBPath]);
         InitializeTrainerDatabase(cfg);
         InitializeSettings(cfg);
@@ -36,7 +36,7 @@ public static class AutoLegalityWrapper
     private static void InitializeSettings(LegalitySettings cfg)
     {
         // Disable expensive PID+ validation for PLZA shiny Pokemon
-        // PKHeX will skip correlation checks when SearchShiny1 is false (see EncounterGift9a.TryGetSeed)
+        // PKHeX will skip correlation checks when SearchShiny1 is false (see EncounterGift9a.TryGetSeed)       
         LumioseSolver.SearchShiny1 = false;
 
         APILegality.SetAllLegalRibbons = cfg.SetAllLegalRibbons;
@@ -90,20 +90,33 @@ public static class AutoLegalityWrapper
         if (Directory.Exists(externalSource))
             TrainerSettings.LoadTrainerDatabaseFromPath(externalSource);
 
-        // Seed the Trainer Database with enough fake save files so that we return a generation sensitive format when needed.  
+        // Seed the Trainer Database with enough fake save files so that we return a generation sensitive format when needed.
         var fallback = GetDefaultTrainer(cfg);
-        for (byte generation = 1; generation <= GameUtil.GetGeneration(GameVersion.Gen9); generation++)
+        for (byte generation = 1; generation <= 9; generation++)
         {
             // Convert the byte generation into an EntityContext via a representative GameVersion for that generation
             var representativeVersion = GameUtil.GetVersion(generation);
             var versions = GameUtil.GetVersionsInGeneration(generation, GameVersion.Any);
             foreach (var version in versions)
-                RegisterIfNoneExist(fallback, generation, version);
+            {
+                var context = GetContextSafe(version);
+                RegisterIfNoneExist(fallback, generation, version, context);
+            }
         }
         // Manually register for LGP/E since Gen7 above will only register the 3DS versions.  
-        RegisterIfNoneExist(fallback, 7, GameVersion.GP);
-        RegisterIfNoneExist(fallback, 7, GameVersion.GE);
+        RegisterIfNoneExist(fallback, 7, GameVersion.GP, EntityContext.Gen7);
+        RegisterIfNoneExist(fallback, 7, GameVersion.GE, EntityContext.Gen7);
     }
+
+    private static EntityContext GetContextSafe(GameVersion v) => v switch
+    {
+        GameVersion.SW or GameVersion.SH => EntityContext.Gen8,
+        GameVersion.BD or GameVersion.SP => EntityContext.Gen8b,
+        GameVersion.PLA => EntityContext.Gen8a,
+        GameVersion.SL or GameVersion.VL => EntityContext.Gen9,
+        GameVersion.ZA => EntityContext.Gen9a,
+        _ => EntityContext.None
+    };
 
     private static SimpleTrainerInfo GetDefaultTrainer(LegalitySettings cfg)
     {
@@ -121,7 +134,7 @@ public static class AutoLegalityWrapper
         return fallback;
     }
 
-    private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version)
+    private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version, EntityContext context)   
     {
         fallback = new SimpleTrainerInfo(version)
         {
@@ -132,7 +145,7 @@ public static class AutoLegalityWrapper
             Generation = generation,
         };
         // Pass the version as the second argument and the fallback as the third to match the overload
-        var exist = TrainerSettings.GetSavedTrainerData(version.GetContext(), version, fallback);
+        var exist = TrainerSettings.GetSavedTrainerData(context, version, fallback);
         if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
             TrainerSettings.Register(fallback);
     }
@@ -142,7 +155,7 @@ public static class AutoLegalityWrapper
         var lang = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName[..2];
         LocalizationUtil.SetLocalization(typeof(LegalityCheckResultCode), lang);
         LocalizationUtil.SetLocalization(typeof(MessageStrings), lang);
-        
+
         // Pre-initialize BattleTemplateLocalization to prevent concurrent dictionary access issues
         // This forces all localizations to be loaded at startup before any concurrent operations
         _ = BattleTemplateLocalization.ForceLoadAll();
@@ -196,7 +209,7 @@ public static class AutoLegalityWrapper
     {
         // Convert the numeric generation into a representative GameVersion, then to an EntityContext
         var representativeVersion = GameUtil.GetVersion(gen);
-        var context = representativeVersion.GetContext();
+        var context = GetContextSafe(representativeVersion);
         return TrainerSettings.GetSavedTrainerData(context);
     }
 
