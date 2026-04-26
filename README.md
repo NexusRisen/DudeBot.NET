@@ -29,7 +29,7 @@ Thanks to these wonderful people:
   <tr>
     <td align="center"><a href="https://github.com/kwsch"><img src="https://github.com/kwsch.png" width="100px;" alt=""/><br /><sub><b>kwsch</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
     <td align="center"><a href="https://nexusrisen.net"><img src="https://github.com/NexusRisen.png" width="100px;" alt=""/><br /><sub><b>Nexus Risen</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#design" title="Design">🎨</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
-    <td align="center"><a href="https://github.com/Luisamine"><img src="https://github.com/Luisamine.png" width="100px;" alt=""/><br /><sub><b>Luisamine</b></sub></a><br /><a href="#research" title="Research">🔬</a> <a href="#data" title="Data">📊</a></td>
+    <td align="center"><a href="https://github.com/Lusamine"><img src="https://github.com/Lusamine.png" width="100px;" alt=""/><br /><sub><b>Lusamine</b></sub></a><br /><a href="#research" title="Research">🔬</a> <a href="#data" title="Data">📊</a></td>
     <td align="center"><a href="https://github.com/hexbyt3"><img src="https://github.com/hexbyt3.png" width="100px;" alt=""/><br /><sub><b>Hexbyt3</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
   <tr>
@@ -53,7 +53,6 @@ Automated trading and encounter bots for all modern Nintendo Switch Pokémon tit
 - **Pokémon Let's Go, Pikachu! & Eevee! (LGPE)**: Legacy support for Kanto-based distributions.
 
 ### 🌐 Universal Translation Engine
-Powered by the same core logic as [ZE-FusionBot](https://github.com/Secludedly/ZE-FusionBot):
 - **Global Support**: Full auto-detection and translation for Japanese, French, Italian, German, Spanish, Korean, and Chinese (Simplified/Traditional).
 - **High-Performance Caching**: Implemented a thread-safe `ConcurrentDictionary` cache for species and moves across all languages, making translations near-instant.
 - **Comprehensive Dictionaries**: Updated language-specific keywords for items, genders, shiny status, stats, and regional forms.
@@ -126,7 +125,7 @@ See the full list of [Contributors](CONTRIBUTORS).
 
 - **[kwsch](https://github.com/kwsch)** - Original Creator (SysBot.NET & PKHeX)
 - **[Nexus Risen](https://nexusrisen.net)** - Main Developer
-- **Luisamine** - Research & Data Analysis
+- **Lusamine** - Research & Data Analysis
 - **Hexbyt3** - Core Engine Enhancements
 - **SantaCrab2** - Auto-Legality Mod (ALM)
 

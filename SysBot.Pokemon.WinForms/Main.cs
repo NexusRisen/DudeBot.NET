@@ -23,7 +23,7 @@ Main Developer:
 - Nexus Risen, Developer of DudeBot.NET
 
 Project Contributors:
-- Luisamine, Research & Data Analysis
+- Lusamine, Research & Data Analysis
 - Hexbyt3, Core Engine Enhancements
 - SantaCrab, Auto-Legality Mod (ALM)
 
