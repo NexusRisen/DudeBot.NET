@@ -52,6 +52,12 @@ Automated trading and encounter bots for all modern Nintendo Switch Pokémon tit
 - **Pokémon Sword & Shield (SWSH)**: Comprehensive support for all distribution types.
 - **Pokémon Let's Go, Pikachu! & Eevee! (LGPE)**: Legacy support for Kanto-based distributions.
 
+### 🌐 Universal Translation Engine
+Powered by the same core logic as [ZE-FusionBot](https://github.com/Secludedly/ZE-FusionBot):
+- **Global Support**: Full auto-detection and translation for Japanese, French, Italian, German, Spanish, Korean, and Chinese (Simplified/Traditional).
+- **High-Performance Caching**: Implemented a thread-safe `ConcurrentDictionary` cache for species and moves across all languages, making translations near-instant.
+- **Comprehensive Dictionaries**: Updated language-specific keywords for items, genders, shiny status, stats, and regional forms.
+
 ### 🤖 Automation & Intelligence
 - **Auto-Legality Mod (ALM)**: Integrated on-the-fly legalization ensures all distributed Pokémon meet strict legality standards.
 - **High-Performance Logic**: BDSP trade routines refactored with `Span<byte>` and `MemoryMarshal` for maximum speed and zero-allocation memory management.
