@@ -344,12 +344,11 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDis
         trash.Clear();
         int maxLength = trash.Length / 2;
         int actualLength = Math.Min(trainerName.Length, maxLength);
-        for (int i = 0; i < actualLength; i++)
-        {
-            char value = trainerName[i];
-            trash[i * 2] = (byte)value;
-            trash[(i * 2) + 1] = (byte)(value >> 8);
-        }
+
+        var charSpan = trainerName.AsSpan(0, actualLength);
+        var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(charSpan);
+        byteSpan.CopyTo(trash);
+
         if (actualLength < maxLength)
         {
             trash[actualLength * 2] = 0x00;
