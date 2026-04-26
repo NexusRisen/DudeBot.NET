@@ -27,9 +27,9 @@ Thanks to these wonderful people:
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/kwsch"><img src="https://avatars.githubusercontent.com/u/2000570?v=4" width="100px;" alt=""/><br /><sub><b>kwsch</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
-    <td align="center"><a href="https://nexusrisen.net"><img src="https://avatars.githubusercontent.com/u/26371104?v=4" width="100px;" alt=""/><br /><sub><b>Nexus Risen</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#design" title="Design">🎨</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
-    <td align="center"><a href="https://github.com/Luisamine"><img src="https://avatars.githubusercontent.com/u/30205550?v=4" width="100px;" alt=""/><br /><sub><b>Luisamine</b></sub></a><br /><a href="#research" title="Research">🔬</a> <a href="#data" title="Data">📊</a></td>
+    <td align="center"><a href="https://github.com/kwsch"><img src="https://github.com/kwsch.png" width="100px;" alt=""/><br /><sub><b>kwsch</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://nexusrisen.net"><img src="https://github.com/NexusRisen.png" width="100px;" alt=""/><br /><sub><b>Nexus Risen</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#design" title="Design">🎨</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://github.com/Luisamine"><img src="https://github.com/Luisamine.png" width="100px;" alt=""/><br /><sub><b>Luisamine</b></sub></a><br /><a href="#research" title="Research">🔬</a> <a href="#data" title="Data">📊</a></td>
     <td align="center"><a href="https://github.com/hexbyt3"><img src="https://github.com/hexbyt3.png" width="100px;" alt=""/><br /><sub><b>Hexbyt3</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
   <tr>
