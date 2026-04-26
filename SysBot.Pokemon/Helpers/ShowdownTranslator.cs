@@ -9,6 +9,39 @@ namespace SysBot.Pokemon
 {
     public class ShowdownTranslator<T> where T : PKM
     {
+        private static readonly LanguageID[] SupportedLanguages = {
+            LanguageID.Japanese,
+            LanguageID.French,
+            LanguageID.Italian,
+            LanguageID.German,
+            LanguageID.Spanish,
+            LanguageID.Korean,
+            LanguageID.ChineseS,
+            LanguageID.ChineseT,
+            LanguageID.English
+        };
+
+        /// <summary>
+        /// Automatically detects the language and translates the input to a standard English Showdown set.
+        /// Cross-referenced with Secludedly's ZE-FusionBot for universal translation support.
+        /// </summary>
+        public static string TranslateToShowdown(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            // Try each supported language to find a species match
+            foreach (var lang in SupportedLanguages)
+            {
+                var speciesCache = ShowdownTranslatorCache.GetSpeciesCache(lang);
+                if (speciesCache.Keys.Any(input.Contains))
+                {
+                    return Any2Showdown(input, lang);
+                }
+            }
+
+            return string.Empty;
+        }
+
         public static string Chinese2Showdown(string input) => Any2Showdown(input, LanguageID.ChineseS);
 
         public static string Any2Showdown(string input, LanguageID sourceLang)

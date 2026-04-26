@@ -127,14 +127,10 @@ public static class Helpers<T> where T : PKM, new()
         content = BatchNormalizer.NormalizeBatchCommands(content);
         bool isEgg = TradeExtensions<T>.IsEggCheck(content);
 
-        // Language detection for multi-lingual sets
-        byte detectedLangId = TradeExtensions<T>.DetectShowdownLanguage(content);
-        LanguageID sourceLang = (LanguageID)detectedLangId;
-        
-        // If it's not English and not obviously a Showdown set, try translating it
-        if (sourceLang != LanguageID.English && !ShowdownTranslator<T>.IsPS(content))
+        // If it's not obviously a Showdown set, try translating it with auto-detection
+        if (!ShowdownTranslator<T>.IsPS(content))
         {
-            var translated = ShowdownTranslator<T>.Any2Showdown(content, sourceLang);
+            var translated = ShowdownTranslator<T>.TranslateToShowdown(content);
             if (!string.IsNullOrWhiteSpace(translated))
             {
                 // Preserve batch commands from the original content
