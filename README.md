@@ -33,6 +33,7 @@ Thanks to these wonderful people:
     <td align="center"><a href="https://github.com/hexbyt3"><img src="https://github.com/hexbyt3.png" width="100px;" alt=""/><br /><sub><b>Hexbyt3</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
   <tr>
+    <td align="center"><a href="https://github.com/Secludedly"><img src="https://github.com/Secludedly.png" width="100px;" alt=""/><br /><sub><b>Secludedly</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
     <td align="center"><a href="https://github.com/santacrab2"><img src="https://github.com/santacrab2.png" width="100px;" alt=""/><br /><sub><b>SantaCrab2</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
 </table>
@@ -127,6 +128,7 @@ See the full list of [Contributors](CONTRIBUTORS).
 - **[Nexus Risen](https://nexusrisen.net)** - Main Developer
 - **Lusamine** - Research & Data Analysis
 - **Hexbyt3** - Core Engine Enhancements
+- **Secludedly** - Medals, Refactoring & Feature Enhancements
 - **SantaCrab2** - Auto-Legality Mod (ALM)
 
 ---
@@ -137,6 +139,13 @@ Need help setting up your instance?
 - 📖 **Read the Docs**: Check the [Wiki](https://github.com/NexusRisen/DudeBot.NET/wiki) for detailed guides.
 
 > **Note**: This bot is a fork of SysBot.NET. Please do not contact the PKHeX Development Project for support regarding DudeBot.NET.
+
+---
+
+## 📜 License
+DudeBot.NET is licensed under the **AGPLv3**. See [LICENSE](LICENSE) for more details.
+SE) for more details.
+tact the PKHeX Development Project for support regarding DudeBot.NET.
 
 ---
 
