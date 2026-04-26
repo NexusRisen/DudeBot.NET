@@ -58,6 +58,7 @@ Automated trading and encounter bots for all modern Nintendo Switch Pokémon tit
 - **Comprehensive Dictionaries**: Updated language-specific keywords for items, genders, shiny status, stats, and regional forms.
 
 ### 🤖 Automation & Intelligence
+Advanced logic features cross-referenced and optimized from [ZE-FusionBot](https://github.com/Secludedly/ZE-FusionBot):
 - **Auto-Legality Mod (ALM)**: Integrated on-the-fly legalization ensures all distributed Pokémon meet strict legality standards.
 - **High-Performance Logic**: BDSP trade routines refactored with `Span<byte>` and `MemoryMarshal` for maximum speed and zero-allocation memory management.
 - **Async Modernization**: Fully non-blocking batch trade sequences using `Task`-based operations.
