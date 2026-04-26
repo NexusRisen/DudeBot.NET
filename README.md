@@ -144,11 +144,3 @@ Need help setting up your instance?
 
 ## 📜 License
 DudeBot.NET is licensed under the **AGPLv3**. See [LICENSE](LICENSE) for more details.
-SE) for more details.
-tact the PKHeX Development Project for support regarding DudeBot.NET.
-
----
-
-## 📜 License
-DudeBot.NET is licensed under the **AGPLv3**. See [LICENSE](LICENSE) for more details.
-SE) for more details.
