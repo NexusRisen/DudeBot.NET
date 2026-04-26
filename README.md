@@ -33,7 +33,7 @@ Thanks to these wonderful people:
     <td align="center"><a href="https://github.com/hexbyt3"><img src="https://github.com/hexbyt3.png" width="100px;" alt=""/><br /><sub><b>Hexbyt3</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/santacrab2"><img src="https://avatars.githubusercontent.com/u/74643033?v=4" width="100px;" alt=""/><br /><sub><b>SantaCrab2</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/santacrab2"><img src="https://github.com/santacrab2.png" width="100px;" alt=""/><br /><sub><b>SantaCrab2</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
   </tr>
 </table>
 
