@@ -43,7 +43,7 @@ public class InfoModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new
                 $"{Format.Bold("Nexus Risen")}: Project Lead & Developer\n" +
                 $"{Format.Bold("Lusamine")}: Research & Data Analysis\n" +
                 $"{Format.Bold("Hexbyt3")}: Core Engine Enhancements\n" +
-                $"{Format.Bold("SantaCrab")}: Auto-Legality Mod (ALM)")
+                $"{Format.Bold("SantaCrab2")}: Auto-Legality Mod (ALM)")
             .AddField("Dependencies",
                 $"{Format.Bold("PKHeX.Core")}: {GetVersionInfo("PKHeX.Core")}\n" +
                 $"{Format.Bold("AutoLegality")}: {GetVersionInfo("PKHeX.Core.AutoMod")}\n" +

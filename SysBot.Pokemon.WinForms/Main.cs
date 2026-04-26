@@ -25,7 +25,7 @@ Main Developer:
 Project Contributors:
 - Lusamine, Research & Data Analysis
 - Hexbyt3, Core Engine Enhancements
-- SantaCrab, Auto-Legality Mod (ALM)
+- SantaCrab2, Auto-Legality Mod (ALM)
 
 Special Thanks To:
 - kwsch, Creator of SysBot.NET
