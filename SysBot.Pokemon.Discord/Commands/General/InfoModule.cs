@@ -40,6 +40,7 @@ public class InfoModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new
                 $"{Format.Bold("Version")}: {DudeBot.Version}\n" +
                 $"{Format.Bold("Build Time")}: {GetVersionInfo("SysBot.Base", false)}")
             .AddField("Contributors",
+                $"{Format.Bold("Nexus Risen")}: Project Lead & Developer\n" +
                 $"{Format.Bold("Luisamine")}: Research & Data Analysis\n" +
                 $"{Format.Bold("Hexbyt3")}: Core Engine Enhancements\n" +
                 $"{Format.Bold("SantaCrab")}: Auto-Legality Mod (ALM)")
