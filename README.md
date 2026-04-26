@@ -14,8 +14,29 @@
 - [🏗️ Project Structure](#️-project-structure)
 - [📦 Dependencies](#-dependencies)
 - [👨‍💻 Development](#-development)
+- [👥 Contributors](CONTRIBUTORS)
 - [🤝 Support](#-support)
 - [📜 License](#-license)
+
+---
+
+## 👥 Contributors
+
+Thanks to these wonderful people:
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<table>
+  <tr>
+    <td align="center"><a href="https://nexusrisen.net"><img src="https://avatars.githubusercontent.com/u/26371104?v=4" width="100px;" alt=""/><br /><sub><b>Nexus Risen</b></sub></a><br /><a href="#code" title="Code">💻</a> <a href="#design" title="Design">🎨</a> <a href="#maintenance" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://github.com/Luisamine"><img src="https://avatars.githubusercontent.com/u/30205550?v=4" width="100px;" alt=""/><br /><sub><b>Luisamine</b></sub></a><br /><a href="#research" title="Research">🔬</a> <a href="#data" title="Data">📊</a></td>
+    <td align="center"><a href="https://github.com/hexbyt3"><img src="https://avatars.githubusercontent.com/u/44118666?v=4" width="100px;" alt=""/><br /><sub><b>Hexbyt3</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/santacrab2"><img src="https://avatars.githubusercontent.com/u/74643033?v=4" width="100px;" alt=""/><br /><sub><b>SantaCrab</b></sub></a><br /><a href="#code" title="Code">💻</a></td>
+  </tr>
+</table>
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
 ---
 
@@ -92,7 +113,10 @@ DudeBot.NET leverages several powerful open-source libraries:
 
 ## 👨‍💻 Development
 
-DudeBot.NET is actively developed by:
+DudeBot.NET is actively developed by Nexus Risen and a dedicated team of contributors.
+
+See the full list of [Contributors](CONTRIBUTORS).
+
 - **[Nexus Risen](https://nexusrisen.net)** - Main Developer
 - **Luisamine** - Research & Data Analysis
 - **Hexbyt3** - Core Engine Enhancements
