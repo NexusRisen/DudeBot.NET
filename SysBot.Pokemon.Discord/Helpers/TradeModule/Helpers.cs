@@ -127,6 +127,22 @@ public static class Helpers<T> where T : PKM, new()
         content = BatchNormalizer.NormalizeBatchCommands(content);
         bool isEgg = TradeExtensions<T>.IsEggCheck(content);
 
+        // Language detection for multi-lingual sets
+        byte detectedLangId = TradeExtensions<T>.DetectShowdownLanguage(content);
+        LanguageID sourceLang = (LanguageID)detectedLangId;
+        
+        // If it's not English and not obviously a Showdown set, try translating it
+        if (sourceLang != LanguageID.English && !ShowdownTranslator<T>.IsPS(content))
+        {
+            var translated = ShowdownTranslator<T>.Any2Showdown(content, sourceLang);
+            if (!string.IsNullOrWhiteSpace(translated))
+            {
+                // Preserve batch commands from the original content
+                var batchCommands = string.Join("\n", content.Split('\n').Where(l => l.TrimStart().StartsWith('.')));
+                content = translated + (string.IsNullOrWhiteSpace(batchCommands) ? "" : "\n" + batchCommands);
+            }
+        }
+
         if (!ShowdownParsing.TryParseAnyLanguage(content, out ShowdownSet? set) || set == null || set.Species == 0)
         {
             return Task.FromResult(new ProcessedPokemonResult<T>

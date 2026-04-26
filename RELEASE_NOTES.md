@@ -1,14 +1,19 @@
-### DudeBot.NET V6.0.5
+### DudeBot.NET V6.0.6
 
 #### New in this Update
-* **Codebase Refactoring & Cleanup**:
-    * **AutoLegalityWrapper**: Simplified trainer info retrieval and refactored fixed OT checks using modern C# switch expressions.
-    * **LanguageHelper**: Unified species name retrieval, removed redundant methods, and improved language detection logic.
-    * **LegalitySettings**: Corrected `CreateDefaults` logic to properly initialize trainer directories and improved setting descriptions.
-* **Upstream Synchronization**:
-    * Synchronized with the latest upstream changes (v1.4.4).
-    * Integrated LGPE language fixes and updated trainer data for WA9.
-    * Improved trainer directory handling to align with current ALM standards.
-* **Build & Performance**:
-    * Verified successful builds for Console and WinForms projects on .NET 10.0.
-    * Cleaned up redundant string allocations in language processing routines.
+* **Super Stable AutoOT (Real-Time Override)**:
+    * **Modern Games (SV, SWSH, BDSP, LA, PLZA)**: Perfected live RAM overrides using multi-byte aware sanitization (`StringInfo`) to prevent string corruption.
+    * **LGPE Implementation**: Specialized memory-based AutoOT that uses saved data to ensure trade stability and prevent desyncs.
+    * **Strict Event Protection**: Improved `FatefulEncounter` logic. The bot now automatically detects and preserves legitimate Event OTs, only overriding those generated with bot defaults or ALM placeholders.
+    * **Enhanced Diagnostics**: Added explicit detection and logging for "ALM" (SantaCrab2) fallback OTs to help troubleshoot missing trainer data.
+* **Universal Translation Engine**:
+    * **Global Support**: Full auto-detection and translation for **Japanese, French, Italian, German, Spanish, Korean, and Chinese (Simplified/Traditional)**.
+    * **High-Performance Caching**: Implemented a thread-safe `ConcurrentDictionary` cache for species and moves across all languages, making translations near-instant.
+    * **Comprehensive Dictionaries**: Updated language-specific keywords for items, genders, shiny status, stats, and regional forms.
+* **Core Cleanup & Workspace Integrity**:
+    * **Standardized Folder Naming**: Unified trainer data location to `TrainerDatabase`.
+    * **Clean Filesystem Policy**: Prevented automatic creation of `TrainerDatabase` and `records` folders to keep the workspace tidy.
+    * **Stability Overhaul**: Wrapped critical trade logic in robust `try-catch` blocks with granular error reporting.
+
+### DudeBot.NET V6.0.6
+

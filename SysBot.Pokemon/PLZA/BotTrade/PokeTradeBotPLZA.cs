@@ -291,122 +291,141 @@ public class PokeTradeBotPLZA(PokeTradeHub<PA9> Hub, PokeBotState Config) : Poke
         pokemon.TrainerSID7 = (uint)Math.Abs(partner.DisplaySID);
 
         // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
-        string otName = LanguageHelper.TruncateOTName(partner.OT, pokemon.Language);
+        string otName = LanguageHelper.SanitizeOTName(partner.OT, pokemon.Language);
         pokemon.OriginalTrainerName = otName;
     }
 
     private async Task<PA9> ApplyAutoOT(PA9 toSend, TradePartnerStatusPLZA tradePartner, SAV9ZA sav, CancellationToken token)
     {
-        // Sanity check: if trade partner OT is empty, skip AutoOT
-        if (string.IsNullOrWhiteSpace(tradePartner.OT))
+        try
         {
-            return toSend;
-        }
-
-        if (toSend.Version == GameVersion.GO)
-        {
-            var goClone = toSend.Clone();
-            goClone.OriginalTrainerName = tradePartner.OT;
-
-            ClearOTTrash(goClone, tradePartner);
-
-            if (!toSend.ChecksumValid)
-                goClone.RefreshChecksum();
-
-            var boxOffset = await GetBoxStartOffset(token).ConfigureAwait(false);
-            await SetBoxPokemonAbsolute(boxOffset, goClone, token, sav).ConfigureAwait(false);
-            return goClone;
-        }
-
-        if (toSend is IHomeTrack pk && pk.HasTracker)
-        {
-            return toSend;
-        }
-
-        if (toSend.Generation != toSend.Format)
-        {
-            return toSend;
-        }
-
-        bool isMysteryGift = toSend.FatefulEncounter;
-
-        // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
-        var legalitySettings = Hub.Config.Legality;
-        bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
-                                     toSend.TID16 == legalitySettings.GenerateTID16 &&
-                                     toSend.SID16 == legalitySettings.GenerateSID16;
-
-        bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
-
-        bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
-
-        if (isMysteryGift && !hasDefaultTrainerInfo)
-        {
-            return toSend;
-        }
-
-        var cln = toSend.Clone();
-
-        // Apply trainer info (OT, TID, SID, Gender)
-        ApplyTrainerInfo(cln, tradePartner);
-
-        if (!isMysteryGift)
-        {
-            // Preserve the originally requested language from the showdown set
-            // Only use trade partner's language if the original language is invalid
-            int originalLanguage = toSend.Language;
-            var configLanguage = (int)legalitySettings.GenerateLanguage;
-
-            if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
+            // Sanity check: if trade partner OT is empty, skip AutoOT
+            if (string.IsNullOrWhiteSpace(tradePartner.OT))
             {
-                // Preserve the user's explicitly requested language
-                cln.Language = originalLanguage;
+                Log("AutoOT: Trade partner OT is empty, skipping.");
+                return toSend;
             }
-            else if (originalLanguage < 1 || originalLanguage > 12)
+
+            if (toSend.Version == GameVersion.GO)
             {
-                // Original language is invalid, use trade partner's language
-                int language = tradePartner.Language;
-                if (language < 1 || language > 12) // Valid language IDs are 1-12
-                    language = 2; // English
-                cln.Language = language;
-            }
-            // else: use current (config) language
-        }
+                var goClone = toSend.Clone();
+                goClone.OriginalTrainerName = tradePartner.OT;
 
-        ClearOTTrash(cln, tradePartner);
+                ClearOTTrash(goClone, tradePartner);
 
-        // Hard-code version to ZA since PLZA only has one game version
-        cln.Version = GameVersion.ZA;
+                if (!toSend.ChecksumValid)
+                    goClone.RefreshChecksum();
 
-        // Set nickname to species name in the Pokemon's language using PKHeX's method
-        // This properly handles generation-specific formatting and language-specific names
-        if (!toSend.IsNicknamed)
-            cln.ClearNickname();
-
-        // Clear handler info - make it look like trade partner is OT and never traded it
-        cln.CurrentHandler = 0; // 0 = OT is current handler
-
-        if (toSend.IsShiny)
-            cln.PID = (uint)((cln.TID16 ^ cln.SID16 ^ (cln.PID & 0xFFFF) ^ toSend.ShinyXor) << 16) | (cln.PID & 0xFFFF);
-
-        cln.RefreshChecksum();
-
-        var tradeSV = new LegalityAnalysis(cln);
-
-        if (tradeSV.Valid)
-        {
-            // Don't pass sav - we've already set handler info and don't want UpdateHandler to overwrite it
-            var boxOffset = await GetBoxStartOffset(token).ConfigureAwait(false);
-            await SetBoxPokemonAbsolute(boxOffset, cln, token, null).ConfigureAwait(false);
-            return cln;
-        }
-        else
-        {
-            if (toSend.Species != 0)
-            {
                 var boxOffset = await GetBoxStartOffset(token).ConfigureAwait(false);
-                await SetBoxPokemonAbsolute(boxOffset, toSend, token, sav).ConfigureAwait(false);
+                await SetBoxPokemonAbsolute(boxOffset, goClone, token, sav).ConfigureAwait(false);
+                Log("Applied only OT name to Pokémon from GO (PLZA).");
+                return goClone;
             }
+
+            if (toSend is IHomeTrack pk && pk.HasTracker)
+            {
+                Log("Home tracker detected. Can't apply AutoOT.");
+                return toSend;
+            }
+
+            if (toSend.Generation != toSend.Format)
+            {
+                Log("Can not apply Partner details: Current handler cannot be different gen OT.");
+                return toSend;
+            }
+
+            bool isMysteryGift = toSend.FatefulEncounter;
+
+            // Check if Mystery Gift has legitimate preset OT/TID/SID (not PKHeX defaults)
+            var legalitySettings = Hub.Config.Legality;
+            bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                         toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                         toSend.SID16 == legalitySettings.GenerateSID16;
+
+            // ALM's NET10 defaults can be identified by the OT name alone
+            bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+            if (hasALMDefaults)
+                Log("ALM default OT detected. This might indicate that no matching trainer data was found in the database.");
+
+            bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
+
+            if (isMysteryGift && !hasDefaultTrainerInfo)
+            {
+                Log("Mystery Gift with preset OT/TID/SID detected. Skipping AutoOT entirely.");
+                return toSend;
+            }
+
+            var cln = toSend.Clone();
+
+            // Apply trainer info (OT, TID, SID, Gender)
+            ApplyTrainerInfo(cln, tradePartner);
+
+            if (!isMysteryGift)
+            {
+                // Preserve the originally requested language from the showdown set
+                // Only use trade partner's language if the original language is invalid
+                int originalLanguage = toSend.Language;
+                var configLanguage = (int)legalitySettings.GenerateLanguage;
+
+                if (originalLanguage != configLanguage && originalLanguage >= 1 && originalLanguage <= 12)
+                {
+                    // Preserve the user's explicitly requested language
+                    cln.Language = originalLanguage;
+                }
+                else if (originalLanguage < 1 || originalLanguage > 12)
+                {
+                    // Original language is invalid, use trade partner's language
+                    int language = tradePartner.Language;
+                    if (language < 1 || language > 12) // Valid language IDs are 1-12
+                        language = 2; // English
+                    cln.Language = language;
+                }
+                // else: use current (config) language
+            }
+
+            ClearOTTrash(cln, tradePartner);
+
+            // Hard-code version to ZA since PLZA only has one game version
+            cln.Version = GameVersion.ZA;
+
+            // Set nickname to species name in the Pokemon's language using PKHeX's method
+            // This properly handles generation-specific formatting and language-specific names
+            if (!toSend.IsNicknamed)
+                cln.ClearNickname();
+
+            // Clear handler info - make it look like trade partner is OT and never traded it
+            cln.CurrentHandler = 0; // 0 = OT is current handler
+
+            if (toSend.IsShiny)
+                cln.PID = (uint)((cln.TID16 ^ cln.SID16 ^ (cln.PID & 0xFFFF) ^ toSend.ShinyXor) << 16) | (cln.PID & 0xFFFF);
+
+            cln.RefreshChecksum();
+
+            var tradeSV = new LegalityAnalysis(cln);
+
+            if (tradeSV.Valid)
+            {
+                Log("Pokemon is valid, applying AutoOT (PLZA).");
+                // Don't pass sav - we've already set handler info and don't want UpdateHandler to overwrite it
+                var boxOffset = await GetBoxStartOffset(token).ConfigureAwait(false);
+                await SetBoxPokemonAbsolute(boxOffset, cln, token, null).ConfigureAwait(false);
+                return cln;
+            }
+            else
+            {
+                Log($"Trade Pokemon can't have AutoOT applied (PLZA). Legality: {tradeSV.Report()}");
+                if (toSend.Species != 0)
+                {
+                    var boxOffset = await GetBoxStartOffset(token).ConfigureAwait(false);
+                    await SetBoxPokemonAbsolute(boxOffset, toSend, token, sav).ConfigureAwait(false);
+                }
+                return toSend;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"AutoOT: Unexpected error during application (PLZA): {ex.Message}");
+            LogUtil.LogError($"AutoOT error (PLZA): {ex}", "AutoOT");
             return toSend;
         }
     }

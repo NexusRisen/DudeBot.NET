@@ -1,6 +1,7 @@
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using System;
+using System.Linq;
 
 namespace SysBot.Pokemon.Helpers;
 
@@ -10,7 +11,7 @@ public static class LanguageHelper
     {
         try
         {
-            var strings = GameInfo.GetStrings("lang");
+            var strings = GameInfo.GetStrings(lang.ToString().ToLower().Replace("chineses", "zh").Replace("chineset", "zh"));
             if (strings?.Species == null || speciesIndex < 0 || speciesIndex >= strings.Species.Count)
                 return "???";
 
@@ -125,20 +126,49 @@ public static class LanguageHelper
     /// Truncates OT name to the appropriate length based on language.
     /// Asian languages (Japanese, Korean, Chinese) have a 6-character limit.
     /// Latin-based languages have a 12-character limit.
+    /// Also sanitizes the name to remove non-printable characters and promotional keywords.
+    /// Uses StringInfo to handle multi-byte characters (emojis, etc.) correctly.
     /// </summary>
-    public static string TruncateOTName(string otName, LanguageID language)
+    public static string SanitizeOTName(string otName, LanguageID language)
     {
         if (string.IsNullOrEmpty(otName))
             return otName;
 
+        // Basic promotional keyword filtering
+        var lower = otName.ToLowerInvariant();
+        if (lower.Contains(".com") || lower.Contains(".co") || lower.Contains("discord") || lower.Contains(".gg/"))
+            otName = "DudeBot.Net";
+
+        // Remove control characters and handle multi-byte characters correctly
+        var textElements = System.Globalization.StringInfo.GetTextElementEnumerator(otName);
+        var result = new System.Text.StringBuilder();
         int maxLength = IsAsianLanguage(language) ? 6 : 12;
-        return otName.Length > maxLength ? otName[..maxLength] : otName;
+        int count = 0;
+
+        while (textElements.MoveNext() && count < maxLength)
+        {
+            string element = textElements.GetTextElement();
+            // Skip if the first char of the element is a control character
+            if (char.IsControl(element[0]))
+                continue;
+
+            result.Append(element);
+            count++;
+        }
+
+        return result.ToString().Trim();
     }
 
     /// <summary>
     /// Truncates OT name to the appropriate length based on language code.
+    /// </summary>
+    public static string SanitizeOTName(string otName, int languageCode) => SanitizeOTName(otName, (LanguageID)languageCode);
+
+    /// <summary>
+    /// Truncates OT name to the appropriate length based on language.
     /// Asian languages (Japanese, Korean, Chinese) have a 6-character limit.
     /// Latin-based languages have a 12-character limit.
     /// </summary>
-    public static string TruncateOTName(string otName, int languageCode) => TruncateOTName(otName, (LanguageID)languageCode);
+    [Obsolete("Use SanitizeOTName instead for better stability.")]
+    public static string TruncateOTName(string otName, LanguageID language) => SanitizeOTName(otName, language);
 }

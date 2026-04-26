@@ -884,6 +884,25 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
         var tradeDetails = tradeCodeStorage.GetTradeDetails(trainerID);
         if (tradeDetails != null)
         {
+            bool isMysteryGift = toSend.FatefulEncounter;
+
+            // Check if Mystery Gift has legitimate preset OT/TID/SID (not configured defaults or ALM's defaults)
+            var legalitySettings = Hub.Config.Legality;
+            bool hasConfiguredDefaults = toSend.OriginalTrainerName.Equals(legalitySettings.GenerateOT, StringComparison.OrdinalIgnoreCase) &&
+                                         toSend.TID16 == legalitySettings.GenerateTID16 &&
+                                         toSend.SID16 == legalitySettings.GenerateSID16;
+
+            // ALM's defaults can be identified by the OT name alone
+            bool hasALMDefaults = toSend.OriginalTrainerName.Equals("ALM", StringComparison.OrdinalIgnoreCase);
+
+            bool hasDefaultTrainerInfo = hasConfiguredDefaults || hasALMDefaults;
+
+            if (isMysteryGift && !hasDefaultTrainerInfo)
+            {
+                Log("Mystery Gift with preset OT/TID/SID detected. Skipping AutoOT to preserve event details.");
+                return Task.FromResult<PB7?>(null);
+            }
+
             var cln = toSend.Clone();
 #pragma warning disable CS8601 // Possible null reference assignment.
             cln.OriginalTrainerName = tradeDetails.OT;
@@ -900,7 +919,7 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
                 cln.Language = originalLanguage; // Preserve user's requested language
 
             // Truncate OT name based on language (Asian languages have 6-char limit, others 12-char)
-            string otName = LanguageHelper.TruncateOTName(tradeDetails.OT ?? "", cln.Language);
+            string otName = LanguageHelper.SanitizeOTName(tradeDetails.OT ?? "", cln.Language);
             cln.OriginalTrainerName = otName;
 
             ClearOTTrash(cln, tradeDetails);
@@ -917,19 +936,18 @@ public class PokeTradeBotLGPE(PokeTradeHub<PB7> Hub, PokeBotState Config) : Poke
             var tradelgpe = new LegalityAnalysis(cln);
             if (tradelgpe.Valid)
             {
-                Log("Pokemon is valid, applying AutoOT.");
+                Log("Pokemon is valid, applying AutoOT (from saved details).");
                 return Task.FromResult<PB7?>(cln);
             }
             else
             {
-                Log("Pokemon not valid, not applying AutoOT.");
-                Log(tradelgpe.Report());
+                Log($"Pokemon not valid after applying saved AutoOT. Legality: {tradelgpe.Report()}");
                 return Task.FromResult<PB7?>(null);
             }
         }
         else
         {
-            Log("Trade details not found for the given trainer OT.");
+            Log("No saved trade details found for this trainer. Skipping AutoOT.");
             return Task.FromResult<PB7?>(null);
         }
     }

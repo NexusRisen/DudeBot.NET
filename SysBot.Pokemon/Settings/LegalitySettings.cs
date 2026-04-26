@@ -10,6 +10,14 @@ namespace SysBot.Pokemon;
 
 public class LegalitySettings
 {
+    private static readonly List<GameVersion> DefaultPriorityOrder = Enum.GetValues<GameVersion>().Where(GameUtil.IsValidSavedVersion).Reverse().ToList();
+    private static readonly List<EncounterTypeGroup> DefaultPrioritizeEncounters =
+    [
+        EncounterTypeGroup.Slot, EncounterTypeGroup.Egg,
+        EncounterTypeGroup.Static, EncounterTypeGroup.Mystery,
+        EncounterTypeGroup.Trade,
+    ];
+
     private string DefaultTrainerName = "DudeBot.Net";
     private const string Generate = nameof(Generate);
     private const string Misc = nameof(Misc);
@@ -19,7 +27,7 @@ public class LegalitySettings
     [Category(Generate), Description("MGDB directory path for Wonder Cards.")]
     public string MGDBPath { get; set; } = string.Empty;
 
-    [Category(Misc), Description("Apply valid pokemon with the trainers OT/SID/TID (AutoOT)"), DisplayName("Use Auto-OT")]
+    [Category(Misc), Description("Apply valid Pokémon with the trainer's OT/SID/TID (AutoOT)"), DisplayName("Use Auto-OT")]
     public bool UseTradePartnerInfo { get; set; } = true;
 
     [Category(Generate), Description("Allow users to submit custom trainer data in Showdown sets, overrides the bot's OT, TID, SID & OT Gender."), DisplayName("Allow Trainer Data Input")]
@@ -34,6 +42,8 @@ public class LegalitySettings
         get => DefaultTrainerName;
         set
         {
+            if (string.IsNullOrWhiteSpace(value))
+                return;
             if (!StringsUtil.IsSpammyString(value))
                 DefaultTrainerName = value;
         }
@@ -52,7 +62,7 @@ public class LegalitySettings
     public GameVersionPriorityType GameVersionPriority { get; set; } = GameVersionPriorityType.NativeOnly;
 
     [Category(Generate), Description("The order of GameVersions ALM will attempt to legalize from.")]
-    public List<GameVersion> PriorityOrder { get; set; } = Enum.GetValues<GameVersion>().Where(GameUtil.IsValidSavedVersion).Reverse().ToList();
+    public List<GameVersion> PriorityOrder { get; set; } = [.. DefaultPriorityOrder];
 
     [Category(Generate), Description("Set all possible legal ribbons for any generated Pokémon.")]
     public bool SetAllLegalRibbons { get; set; } = false;
@@ -76,12 +86,7 @@ public class LegalitySettings
     public bool DisallowTracked { get; set; } = false;
 
     [Category(Generate), Description("The order in which Pokémon encounter types are attempted.")]
-    public List<EncounterTypeGroup> PrioritizeEncounters { get; set; } =
-    [
-        EncounterTypeGroup.Slot, EncounterTypeGroup.Egg,
-        EncounterTypeGroup.Static, EncounterTypeGroup.Mystery,
-        EncounterTypeGroup.Trade,
-    ];
+    public List<EncounterTypeGroup> PrioritizeEncounters { get; set; } = [.. DefaultPrioritizeEncounters];
 
     [Browsable(false)]
     [Category(Generate), Description("Adds Battle Version for games that support it (SWSH only) for using past-gen Pokémon in online competitive play.")]
@@ -103,10 +108,8 @@ public class LegalitySettings
 
     public void CreateDefaults(string path)
     {
-        var trainerPath = Path.Combine(path, "trainers");
-        if (!Directory.Exists(trainerPath))
-            Directory.CreateDirectory(trainerPath);
-
-        GeneratePathTrainerInfo = trainerPath;
+        // Standardize on TrainerDatabase and do not create it automatically.
+        // This keeps the workspace clean and removes ambiguity between trainers/trainerData.
+        GeneratePathTrainerInfo = Path.Combine(path, "TrainerDatabase");
     }
 }

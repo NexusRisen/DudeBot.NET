@@ -5,19 +5,16 @@ namespace SysBot.Base.Util
 {
     public static class RecordUtil<T>
     {
-        private static readonly string LogPath;
-
-        static RecordUtil()
-        {
-            const string dir = "records";
-            Directory.CreateDirectory(dir);
-            LogPath = Path.Combine(dir, $"{typeof(T).Name}.txt");
-        }
+        private static readonly string LogPath = Path.Combine("records", $"{typeof(T).Name}.txt");
 
         public static void Record(string message)
         {
             try
             {
+                var dir = Path.GetDirectoryName(LogPath);
+                if (dir != null && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
                 File.AppendAllText(LogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\t{message}{Environment.NewLine}");
             }
             catch (Exception ex)
