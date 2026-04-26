@@ -5,6 +5,10 @@ using System.Linq;
 
 namespace SysBot.Pokemon
 {
+    /// <summary>
+    /// Thread-safe cache for species and moves across all languages.
+    /// Logic cross-referenced and optimized from Secludedly's ZE-FusionBot (https://github.com/Secludedly/ZE-FusionBot).
+    /// </summary>
     public static class ShowdownTranslatorCache
     {
         private static readonly ConcurrentDictionary<LanguageID, Dictionary<string, int>> _speciesCache = new();

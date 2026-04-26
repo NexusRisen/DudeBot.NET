@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon;
 
+/// <summary>
+/// Wrapper for Auto-Legality Mod (ALM) integration.
+/// Implementation cross-referenced and optimized from Secludedly's ZE-FusionBot (https://github.com/Secludedly/ZE-FusionBot).
+/// </summary>
 public static class AutoLegalityWrapper
 {
     private static bool Initialized;
