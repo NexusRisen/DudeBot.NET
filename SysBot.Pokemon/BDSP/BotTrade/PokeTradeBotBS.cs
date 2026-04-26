@@ -17,10 +17,6 @@ using static SysBot.Pokemon.TradeHub.SpecialRequests;
 namespace SysBot.Pokemon;
 
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-/// <summary>
-/// High-performance BDSP trade bot implementation.
-/// Trade routines and zero-allocation logic cross-referenced and optimized from Secludedly's ZE-FusionBot (https://github.com/Secludedly/ZE-FusionBot).
-/// </summary>
 public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot, ITradeBot, IDisposable
 {
     private readonly PokeTradeHub<PB8> Hub;
