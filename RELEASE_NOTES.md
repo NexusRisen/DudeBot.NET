@@ -1,19 +1,20 @@
-### DudeBot.NET V6.0.6
+### DudeBot.NET V6.0.7
 
 #### New in this Update
-* **Super Stable AutoOT (Real-Time Override)**:
-    * **Modern Games (SV, SWSH, BDSP, LA, PLZA)**: Perfected live RAM overrides using multi-byte aware sanitization (`StringInfo`) to prevent string corruption.
-    * **LGPE Implementation**: Specialized memory-based AutoOT that uses saved data to ensure trade stability and prevent desyncs.
-    * **Strict Event Protection**: Improved `FatefulEncounter` logic. The bot now automatically detects and preserves legitimate Event OTs, only overriding those generated with bot defaults or ALM placeholders.
-    * **Enhanced Diagnostics**: Added explicit detection and logging for "ALM" (SantaCrab2) fallback OTs to help troubleshoot missing trainer data.
 * **Universal Translation Engine**:
-    * **Global Support**: Full auto-detection and translation for **Japanese, French, Italian, German, Spanish, Korean, and Chinese (Simplified/Traditional)**.
+    * **Full Auto-Detection**: Automatically identifies and translates Showdown sets in **Japanese, French, Italian, German, Spanish, Korean, and Chinese (Simplified/Traditional)** without requiring manual language selection.
     * **High-Performance Caching**: Implemented a thread-safe `ConcurrentDictionary` cache for species and moves across all languages, making translations near-instant.
     * **Comprehensive Dictionaries**: Updated language-specific keywords for items, genders, shiny status, stats, and regional forms.
-* **Core Cleanup & Workspace Integrity**:
-    * **Standardized Folder Naming**: Unified trainer data location to `TrainerDatabase`.
-    * **Clean Filesystem Policy**: Prevented automatic creation of `TrainerDatabase` and `records` folders to keep the workspace tidy.
-    * **Stability Overhaul**: Wrapped critical trade logic in robust `try-catch` blocks with granular error reporting.
-
-### DudeBot.NET V6.0.6
-
+* **High-Performance Logic (BDSP)**:
+    * **Zero-Allocation Memory Management**: Refactored BDSP trade routines using `Span<byte>` and `MemoryMarshal` to maximize throughput and minimize GC pressure.
+    * **Async Modernization**: Fully transitioned core bot loops and batch trade sequences to non-blocking `Task`-based operations.
+* **CI/CD & Workspace Integrity**:
+    * **Linux-Friendly Build Fix**: Resolved dependency submission failures in GitHub Actions by enabling `EnableWindowsTargeting` for the WinForms project on non-Windows runners.
+    * **Standardized Folder Naming**: Unified trainer data location to `TrainerDatabase` and prevented automatic creation of redundant folders.
+* **Dependency & Ecosystem Updates**:
+    * **Twitch Integration**: Upgraded `TwitchLib.Client` to **v4.0.1** for improved stability and modern feature support.
+    * **Core Libraries**: Updated `Microsoft.Extensions` and `System.Drawing.Common` to **v10.0.7**.
+* **Contributor Recognition**:
+    * Added **kwsch** as the **Original Creator** of SysBot.NET and PKHeX.
+    * Added **Secludedly** for significant contributions to **Medals, Refactoring, and Feature Enhancements**.
+    * Fixed spelling and image URLs for all core contributors (**Lusamine**, **SantaCrab2**, **Hexbyt3**).
