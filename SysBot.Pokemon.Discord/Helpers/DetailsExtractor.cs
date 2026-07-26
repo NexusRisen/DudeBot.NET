@@ -82,7 +82,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
             embedBuilder.AddField("📊 Stats", string.Join("\n", statsList), false);
 
         if (!string.IsNullOrEmpty(movesContent))
-            embedBuilder.AddField("⚔️ Moves", movesContent, true);
+            embedBuilder.AddField("⚔️ Moves", movesContent, false);
 
         // Additional Information (Met, Scale, etc.)
         var additionalInfo = new List<string>();
@@ -257,7 +257,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         embedData.MetLevel = pk.MetLevel;
         var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
         embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"**ID:** {pk.MetLocation}" : $"{metLocationName} **(ID: {pk.MetLocation})**";
-        embedData.MovesDisplay = embedData.Moves != null ? string.Join("\n", embedData.Moves) : string.Empty;
+        embedData.MovesDisplay = embedData.Moves != null ? string.Join(" • ", embedData.Moves) : string.Empty;
         embedData.PokemonDisplayName = pk.IsNicknamed ? pk.Nickname : embedData.SpeciesName;
 
         embedData.TradeTitle = GetTradeTitle(isMysteryEgg, isCloneRequest, isDumpRequest, isFixOTRequest, isSpecialRequest, isBatchTrade, batchTradeNumber, embedData.PokemonDisplayName, pk.IsShiny);

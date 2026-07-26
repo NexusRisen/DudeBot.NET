@@ -1,8 +1,7 @@
 # Release Notes
 
-## [9.1.16]
-- **Trade Notification & Cancellation Fixes**:
-  - Fixed an issue where trade timeouts (such as "No trading partner found") spammed redundant `NoTrainerFound` and false `UserCanceled` notifications.
-  - Set `IsCanceled` state when trades are canceled so queue removal does not emit secondary `UserCanceled` messages.
-  - Formatted `PokeTradeResult` cancellation reasons into human-readable notifications across Discord, Stoat, Twitch, and Kook notifiers.
-  - Added abort checks to batch and single trade routines to prevent duplicate failure notifications.
+## [9.1.17]
+- **HOME Tracker & Trade Embed Improvements**:
+  - Added decimal HOME Tracker ID display (e.g. `Tracker ID: 1311768467294899696`) to Discord trade queue embeds when a HOME Tracker is present.
+  - Added explicit `Tracker ID: None` display to Discord embeds when a Pokémon file does not have a HOME Tracker.
+  - Formatted move lists horizontally in a single inline line separated by bullet points (`*Move 1* (PP) • *Move 2* (PP) ...`).

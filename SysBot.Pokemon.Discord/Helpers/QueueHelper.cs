@@ -183,28 +183,27 @@ public static class QueueHelper<T> where T : PKM, new()
             }
 
             // Check if the Pokemon is Non-Native and/or has a Home Tracker
-            if (pk is IHomeTrack homeTrack)
+            if (pk is IHomeTrack homeTrack && homeTrack.HasTracker)
             {
-                if (homeTrack.HasTracker && isNonNative)
+                if (isNonNative)
                 {
                     embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
-                    embedBuilder.AddField("**__Notice__**: **This Pokemon is Non-Native & Has Home Tracker.**", "*AutoOT not applied.*");
+                    embedBuilder.AddField("**__Notice__**: **This Pokemon is Non-Native & Has Home Tracker.**", $"*Tracker ID:* `{homeTrack.Tracker}`\n*AutoOT not applied.*");
                 }
-                else if (homeTrack.HasTracker)
+                else
                 {
                     embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
-                    embedBuilder.AddField("**__Notice__**: **Home Tracker Detected.**", "*AutoOT not applied.*");
-                }
-                else if (isNonNative)
-                {
-                    embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
-                    embedBuilder.AddField("**__Notice__**: **This Pokemon is Non-Native.**", "*Cannot enter HOME & AutoOT not applied.*");
+                    embedBuilder.AddField("**__Notice__**: **Home Tracker Detected.**", $"*Tracker ID:* `{homeTrack.Tracker}`\n*AutoOT not applied.*");
                 }
             }
             else if (isNonNative)
             {
                 embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
-                embedBuilder.AddField("**__Notice__**: **This Pokemon is Non-Native.**", "*Cannot enter HOME & AutoOT not applied.*");
+                embedBuilder.AddField("**__Notice__**: **This Pokemon is Non-Native.**", "*Tracker ID:* `None`\n*Cannot enter HOME & AutoOT not applied.*");
+            }
+            else
+            {
+                embedBuilder.AddField("**__Notice__**: **No Home Tracker.**", "*Tracker ID:* `None`");
             }
 
             DetailsExtractor<T>.AddThumbnails(embedBuilder, type == PokeRoutineType.Clone, type == PokeRoutineType.SeedCheck, embedData.HeldItemUrl);
@@ -382,13 +381,14 @@ public static class QueueHelper<T> where T : PKM, new()
                     DetailsExtractor<T>.AddNormalTradeFields(embedBuilder, embedData, trader.Mention, pk);
 
                     // Check for Non-Native and Home Tracker
-                    if (pk is IHomeTrack homeTrack)
+                    if (pk is IHomeTrack homeTrack && homeTrack.HasTracker)
                     {
-                        if (homeTrack.HasTracker)
-                        {
-                            embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
-                            embedBuilder.AddField("**__Notice__**: **Home Tracker Detected.**", "*AutoOT not applied.*");
-                        }
+                        embedBuilder.Footer.IconUrl = SysBot.Pokemon.Helpers.AssetManager.GetAssetUrl("Assets/Bot/Actions/setedited.png");
+                        embedBuilder.AddField("**__Notice__**: **Home Tracker Detected.**", $"*Tracker ID:* `{homeTrack.Tracker}`\n*AutoOT not applied.*");
+                    }
+                    else
+                    {
+                        embedBuilder.AddField("**__Notice__**: **No Home Tracker.**", "*Tracker ID:* `None`");
                     }
 
                     DetailsExtractor<T>.AddThumbnails(embedBuilder, false, false, embedData.HeldItemUrl);
