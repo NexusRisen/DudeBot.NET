@@ -206,6 +206,7 @@ public class TradeSettings : IBotStateSettings, ICountSettings
                 ShowAbility = false;
                 ShowNature = false;
                 ShowIVs = false;
+                ShowMovePP = false;
             }
         }
 
@@ -326,6 +327,9 @@ public class TradeSettings : IBotStateSettings, ICountSettings
 
         [Category(EmbedSettings), Description("Will show EVs in trade embed (Discord only)."), DisplayName("Show EVs")]
         public bool ShowEVs { get; set; } = true;
+
+        [Category(EmbedSettings), Description("Will show PP for moves in trade embed (Discord only)."), DisplayName("Show Move PP")]
+        public bool ShowMovePP { get; set; } = true;
     }
 
     [Category(VGCPastesConfig), TypeConverter(typeof(CategoryConverter<VGCPastesCategory>))]

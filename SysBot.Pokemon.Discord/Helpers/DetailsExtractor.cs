@@ -82,7 +82,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
             embedBuilder.AddField("📊 Stats", string.Join("\n", statsList), false);
 
         if (!string.IsNullOrEmpty(movesContent))
-            embedBuilder.AddField("⚔️ Moves", movesContent, false);
+            embedBuilder.AddField("⚔️ Moves", movesContent, true);
 
         // Additional Information (Met, Scale, etc.)
         var additionalInfo = new List<string>();
@@ -257,7 +257,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         embedData.MetLevel = pk.MetLevel;
         var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
         embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"**ID:** {pk.MetLocation}" : $"{metLocationName} **(ID: {pk.MetLocation})**";
-        embedData.MovesDisplay = embedData.Moves != null ? string.Join(" • ", embedData.Moves) : string.Empty;
+        embedData.MovesDisplay = embedData.Moves != null ? string.Join("\n", embedData.Moves) : string.Empty;
         embedData.PokemonDisplayName = pk.IsNicknamed ? pk.Nickname : embedData.SpeciesName;
 
         embedData.TradeTitle = GetTradeTitle(isMysteryEgg, isCloneRequest, isDumpRequest, isFixOTRequest, isSpecialRequest, isBatchTrade, batchTradeNumber, embedData.PokemonDisplayName, pk.IsShiny);
@@ -398,12 +398,12 @@ public static class DetailsExtractor<T> where T : PKM, new()
             byte moveTypeId = MoveInfo.GetType(moves[i], default);
             PKHeX.Core.MoveType moveType = (PKHeX.Core.MoveType)moveTypeId;
 
-            // For PLZA (PA9) we skip the PP entirely
             bool isPLZA = pk is PA9;
+            bool showPP = !isPLZA && SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.ShowMovePP;
 
-            string formattedMove = isPLZA
-                ? $"*{moveName}*" // no PP
-                : $"*{moveName}* ({movePPs[i]} PP)"; // normal games include PP
+            string formattedMove = showPP
+                ? $"*{moveName}* ({movePPs[i]} PP)"
+                : $"*{moveName}*";
 
             // Add type emoji
             if (SysCord<T>.Runner.Config.Trade.TradeEmbedSettings.MoveTypeEmojis && typeEmojis.TryGetValue(moveType, out var moveEmoji))
@@ -421,7 +421,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
                 }
             }
 
-            moveNames.Add($"\u200B{formattedMove}");
+            moveNames.Add($"• {formattedMove}");
         }
 
         return moveNames;
