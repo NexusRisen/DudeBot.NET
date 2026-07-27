@@ -86,16 +86,16 @@ public static class DetailsExtractor<T> where T : PKM, new()
 
         // Additional Information (Met, Scale, etc.)
         var additionalInfo = new List<string>();
-        if (settings.ShowMetLevel) additionalInfo.Add($"Level {embedData.MetLevel}");
-        if (settings.ShowMetDate) additionalInfo.Add($"Date: {embedData.MetDate}");
-        if (settings.ShowMetLocation) additionalInfo.Add($"{embedData.MetLocation}");
+        if (settings.ShowMetLevel) additionalInfo.Add($"**Met Level:** Level {embedData.MetLevel}");
+        if (settings.ShowMetDate) additionalInfo.Add($"**Met Date:** {embedData.MetDate}");
+        if (settings.ShowMetLocation) additionalInfo.Add($"**Met Location:** {embedData.MetLocation}");
         
         if (pk.Version is GameVersion.PLA or GameVersion.SL or GameVersion.VL && settings.ShowScale)
-            additionalInfo.Add($"Scale: {embedData.Scale.Item1} ({embedData.Scale.Item2})");
+            additionalInfo.Add($"**Scale:** {embedData.Scale.Item1} ({embedData.Scale.Item2})");
 
         if (additionalInfo.Count > 0)
         {
-            embedBuilder.AddField("📍 Origin & Physical", string.Join(" • ", additionalInfo), false);
+            embedBuilder.AddField("📍 Origin & Physical", string.Join("\n", additionalInfo), false);
         }
     }
 
@@ -256,7 +256,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         embedData.MetDate = pk.MetDate.ToString();
         embedData.MetLevel = pk.MetLevel;
         var metLocationName = strings.GetLocationName(false, pk.MetLocation, pk.Format, pk.Generation, (GameVersion)pk.Version);
-        embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"**ID:** {pk.MetLocation}" : $"{metLocationName} **(ID: {pk.MetLocation})**";
+        embedData.MetLocation = string.IsNullOrWhiteSpace(metLocationName) ? $"ID: {pk.MetLocation}" : $"{metLocationName} (ID: {pk.MetLocation})";
         embedData.MovesDisplay = embedData.Moves != null ? string.Join("\n", embedData.Moves) : string.Empty;
         embedData.PokemonDisplayName = pk.IsNicknamed ? pk.Nickname : embedData.SpeciesName;
 
