@@ -93,25 +93,59 @@ public class QueueModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
     }
 
     [Command("queueStatus")]
-    [Alias("qs", "ts")]
-    [Summary("Checks the user's position in the queue.")]
+    [Alias("qs", "ts", "queue", "position", "pos", "q")]
+    [Summary("Checks your current position and estimated wait time in the queue.")]
     public async Task GetTradePositionAsync()
     {
         var userID = Context.User.Id;
         var tradeEntry = Info.GetDetail(userID);
 
-        string msg;
         if (tradeEntry != null)
         {
             var uniqueTradeID = tradeEntry.UniqueTradeID;
-            msg = Context.User.Mention + " - " + Info.GetPositionString(userID, uniqueTradeID, tradeEntry.Type);
-        }
-        else
-        {
-            msg = Context.User.Mention + " - You are not currently in the queue.";
+            var posResult = Info.CheckPosition(userID, uniqueTradeID, tradeEntry.Type);
+
+            if (posResult.InQueue)
+            {
+                var botct = Info.Hub.Bots.Count;
+                var currentPos = posResult.Position < 1 ? 1 : posResult.Position;
+                var baseEta = currentPos > botct ? Info.Hub.Config.Queues.EstimateDelay(currentPos, botct) : 0;
+                var etaText = baseEta > 0 ? $"~{baseEta:F1} min(s)" : "<1 min";
+
+                string posDisplay = currentPos == 1 ? "⚡ #1 (Up Next!)" : $"#{currentPos} of {posResult.QueueCount}";
+
+                string requestInfo = posResult.Detail != null && posResult.Detail.Trade.TradeData.Species != 0
+                    ? GameInfo.GetStrings("en").Species[posResult.Detail.Trade.TradeData.Species]
+                    : tradeEntry.Type.ToString();
+
+                if (posResult.TotalBatchTrades > 1)
+                    requestInfo += $" (Batch {posResult.BatchNumber}/{posResult.TotalBatchTrades})";
+
+                var embed = new EmbedBuilder()
+                    .WithTitle("📌 Queue Position Status")
+                    .WithDescription($"Hello {Context.User.Mention}, here is your status in the trade queue:")
+                    .AddField("Queue Position", $"` {posDisplay} `", inline: true)
+                    .AddField("Estimated Wait", $"` {etaText} `", inline: true)
+                    .AddField("Request Details", requestInfo, inline: false)
+                    .WithColor(currentPos == 1 ? EmbedStyle.Amber : EmbedStyle.Blurple)
+                    .WithNexusFooter()
+                    .Build();
+
+                var sentMessage = await ReplyAsync(embed: embed).ConfigureAwait(false);
+                _ = DeleteMessagesAfterDelayAsync(sentMessage, Context.Message, 15);
+                return;
+            }
         }
 
-        await ReplyAndDeleteAsync(msg, 5, Context.Message).ConfigureAwait(false);
+        var notInQueueEmbed = new EmbedBuilder()
+            .WithTitle("ℹ️ Queue Status")
+            .WithDescription($"{Context.User.Mention}, you are not currently in any trade queue.\n\nUse `!trade <set>` to queue a Pokémon trade!")
+            .WithColor(EmbedStyle.DarkSlate)
+            .WithNexusFooter()
+            .Build();
+
+        var notInQueueMsg = await ReplyAsync(embed: notInQueueEmbed).ConfigureAwait(false);
+        _ = DeleteMessagesAfterDelayAsync(notInQueueMsg, Context.Message, 10);
     }
 
     [Command("queueList")]

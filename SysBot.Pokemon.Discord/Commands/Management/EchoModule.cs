@@ -95,23 +95,21 @@ namespace SysBot.Pokemon.Discord
             var unixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var formattedTimestamp = $"<t:{unixTimestamp}:F>";
 
-            var embedColor = isFull ? Color.Red : Color.Green;
+            var embedColor = isFull ? EmbedStyle.Ruby : EmbedStyle.Emerald;
             var title = isFull ? "🚫 Queue is Now Full!" : "✅ Queue is Now Open!";
-            var description = isFull
-                ? $"The queue has reached maximum capacity and is now **closed**.\n\n**Current Queue Count:** {currentCount}/{maxCount}\n\nThe queue will automatically open when trades are completed and space becomes available.\n\n**Status Updated:** {formattedTimestamp}"
-                : $"The queue is now **open** and accepting new trades!\n\n**Current Queue Count:** {currentCount}/{maxCount}\n\n**Status Updated:** {formattedTimestamp}";
-
             var thumbnailUrl = Settings.AnnouncementSettings.RandomAnnouncementThumbnail ? GetRandomThumbnail() : GetSelectedThumbnail();
-
-            var embed = new EmbedBuilder
-            {
-                Color = embedColor,
-                Description = description
-            }
-            .WithTitle(title)
-            .WithThumbnailUrl(thumbnailUrl)
-            .WithFooter("Queue status updates are automatic")
-            .Build();
+            
+            var embed = new EmbedBuilder()
+                .WithTitle(title)
+                .WithDescription(isFull 
+                    ? "The trade queue has reached maximum capacity and is temporarily closed to new requests." 
+                    : "The trade queue is now open and accepting new trade requests!")
+                .AddField("Queue Capacity", $"` {currentCount} / {maxCount} `", inline: true)
+                .AddField("Status Updated", formattedTimestamp, inline: true)
+                .WithColor(embedColor)
+                .WithThumbnailUrl(thumbnailUrl)
+                .WithNexusFooter("Automatic status announcement")
+                .Build();
 
             foreach (var channelEntry in Channels)
             {

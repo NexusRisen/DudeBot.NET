@@ -23,7 +23,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         string additionalText = string.Join("\n", SysCordSettings.Settings.AdditionalEmbedText);
         if (!string.IsNullOrEmpty(additionalText))
         {
-            embedBuilder.AddField("\u200B", additionalText, inline: false);
+            embedBuilder.AddField("📢 Notice", additionalText, inline: false);
         }
     }
 
@@ -43,7 +43,7 @@ public static class DetailsExtractor<T> where T : PKM, new()
         if (settings.ShowNature)
         {
             if (!string.IsNullOrEmpty(embedData.StatAlignment))
-                overviewList.Add($"**Nature:** {embedData.StatAlignment} (from {embedData.Nature})");
+                overviewList.Add($"**Nature:** {embedData.StatAlignment} ({embedData.Nature})");
             else
                 overviewList.Add($"**Nature:** {embedData.Nature}");
         }
@@ -73,16 +73,16 @@ public static class DetailsExtractor<T> where T : PKM, new()
             speciesHeader += $" @ {embedData.HeldItem}";
         }
         embedBuilder.WithTitle(speciesHeader);
-        embedBuilder.WithDescription($"**User:** {trainerMention}");
+        embedBuilder.WithDescription($"👤 **User:** {trainerMention}");
 
         if (overviewList.Count > 0)
-            embedBuilder.AddField("📋 Overview", string.Join("\n", overviewList), false);
+            embedBuilder.AddField("📋 Overview", string.Join("\n", overviewList), inline: true);
         
         if (statsList.Count > 0)
-            embedBuilder.AddField("📊 Stats", string.Join("\n", statsList), false);
+            embedBuilder.AddField("📊 Stats", string.Join("\n", statsList), inline: true);
 
         if (!string.IsNullOrEmpty(movesContent))
-            embedBuilder.AddField("⚔️ Moves", movesContent, true);
+            embedBuilder.AddField("⚔️ Moves", movesContent, inline: true);
 
         // Additional Information (Met, Scale, etc.)
         var additionalInfo = new List<string>();
@@ -95,8 +95,11 @@ public static class DetailsExtractor<T> where T : PKM, new()
 
         if (additionalInfo.Count > 0)
         {
-            embedBuilder.AddField("📍 Origin & Physical", string.Join("\n", additionalInfo), false);
+            embedBuilder.AddField("📍 Origin & Physical", string.Join("\n", additionalInfo), inline: false);
         }
+
+        embedBuilder.WithColor(pk.IsShiny ? EmbedStyle.Amethyst : EmbedStyle.Blurple);
+        embedBuilder.WithNexusFooter();
     }
 
 
@@ -111,9 +114,11 @@ public static class DetailsExtractor<T> where T : PKM, new()
     /// <param name="trainerMention">Discord mention for the trainer.</param>
     public static void AddSpecialTradeFields(EmbedBuilder embedBuilder, bool isMysteryEgg, bool isSpecialRequest, bool isCloneRequest, bool isFixOTRequest, string trainerMention)
     {
-        string specialDescription = $"**Trainer:** {trainerMention}\n" +
-                                    (isMysteryEgg ? "Mystery Egg" : isSpecialRequest ? "Special Request" : isCloneRequest ? "Clone Request" : isFixOTRequest ? "FixOT Request" : "Dump Request");
-        embedBuilder.AddField("\u200B", specialDescription, inline: false);
+        string requestType = isMysteryEgg ? "Mystery Egg" : isSpecialRequest ? "Special Request" : isCloneRequest ? "Clone Request" : isFixOTRequest ? "FixOT Request" : "Dump Request";
+        embedBuilder.WithTitle($"🎁 {requestType}");
+        embedBuilder.WithDescription($"👤 **Trainer:** {trainerMention}\n> **Type:** {requestType}");
+        embedBuilder.WithColor(EmbedStyle.Amethyst);
+        embedBuilder.WithNexusFooter();
     }
 
     /// <summary>

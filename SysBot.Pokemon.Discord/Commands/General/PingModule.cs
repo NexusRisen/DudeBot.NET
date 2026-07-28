@@ -27,10 +27,15 @@ public class PingModule : ModuleBase<SocketCommandContext>
         var latency = Context.Client.Latency;
         var response = _responses[_rng.Next(_responses.Length)];
 
+        string latencyBadge = latency < 150 ? "🟢 Excellent" : latency < 300 ? "🟡 Good" : "🔴 Delayed";
+
         var embed = new EmbedBuilder()
-            .WithTitle("System Diagnostic")
-            .WithDescription($"{response}\n\n*Latency: {latency}ms*")
-            .WithColor(Color.Green)
+            .WithTitle("⚡ System Status")
+            .WithDescription(response)
+            .AddField("Latency", $"`{latency} ms`", inline: true)
+            .AddField("Status", latencyBadge, inline: true)
+            .WithColor(latency < 300 ? EmbedStyle.Emerald : EmbedStyle.Amber)
+            .WithNexusFooter()
             .Build();
 
         await ReplyAsync(embed: embed).ConfigureAwait(false);

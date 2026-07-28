@@ -110,10 +110,10 @@ namespace SysBot.Pokemon.Discord
                 footerText += $" | Type `help {page + 1}` for the next page.";
 
             var embedBuilder = new EmbedBuilder()
-                .WithTitle("Available Commands")
-                .WithColor(Color.Blue)
+                .WithTitle("📖 Available Commands")
+                .WithColor(EmbedStyle.Blurple)
                 .WithDescription(pages[page - 1])
-                .WithFooter(footerText);
+                .WithNexusFooter(footerText);
 
             try
             {
@@ -147,17 +147,18 @@ namespace SysBot.Pokemon.Discord
             }
 
             var embedBuilder = new EmbedBuilder()
-                .WithTitle($"Help for {command}")
-                .WithColor(Color.Blue);
+                .WithTitle($"📖 Command Details — `{command}`")
+                .WithColor(EmbedStyle.Blurple)
+                .WithNexusFooter();
 
             foreach (var match in searchResult.Commands)
             {
                 var cmd = match.Command;
 
-                var parameters = cmd.Parameters.Select(p => $"`{p.Name}` - {p.Summary}");
+                var parameters = cmd.Parameters.Select(p => $"• `{p.Name}` — {p.Summary}");
                 var parameterSummary = string.Join("\n", parameters);
 
-                embedBuilder.AddField(cmd.Name, $"{cmd.Summary}\n\n**Parameters:**\n{parameterSummary}", false);
+                embedBuilder.AddField($"Command: {cmd.Name}", $"{cmd.Summary}\n\n**Parameters:**\n{(string.IsNullOrEmpty(parameterSummary) ? "None" : parameterSummary)}", false);
             }
 
             try

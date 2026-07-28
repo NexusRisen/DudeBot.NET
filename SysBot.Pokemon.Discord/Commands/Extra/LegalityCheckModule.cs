@@ -34,19 +34,14 @@ public class LegalityCheckModule : ModuleBase<SocketCommandContext>
 
         var pkm = download.Data!;
         var la = new LegalityAnalysis(pkm);
-        var builder = new EmbedBuilder
-        {
-            Color = la.Valid ? Color.Green : Color.Red,
-            Description = $"Legality Report for {download.SanitizedFileName}:",
-        };
+        var embed = new EmbedBuilder()
+            .WithTitle(la.Valid ? "✅ Legality Verification Passed" : "❌ Legality Verification Failed")
+            .WithDescription($"Legality Analysis Report for `{download.SanitizedFileName}`:")
+            .AddField(la.Valid ? "Result: Valid" : "Result: Invalid", $"```\n{la.Report(verbose)}\n```", inline: false)
+            .WithColor(la.Valid ? EmbedStyle.Emerald : EmbedStyle.Ruby)
+            .WithNexusFooter()
+            .Build();
 
-        builder.AddField(x =>
-        {
-            x.Name = la.Valid ? "Valid" : "Invalid";
-            x.Value = la.Report(verbose);
-            x.IsInline = false;
-        });
-
-        await ReplyAsync("Here's the legality report!", false, builder.Build()).ConfigureAwait(false);
+        await ReplyAsync(embed: embed).ConfigureAwait(false);
     }
 }

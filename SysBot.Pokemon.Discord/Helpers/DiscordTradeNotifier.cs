@@ -111,14 +111,12 @@ public class DiscordTradeNotifier<T> : IPokeTradeNotifier<T>, IDisposable
                         _almostUpNotificationSent = true;
 
                         var batchInfo = TotalBatchTrades > 1 ? $"\n\n**Important:** This is a batch trade with {TotalBatchTrades} Pokémon. Please stay in the trade until all are completed!" : "";
-
-                        var upNextEmbed = new EmbedBuilder
-                        {
-                            Color = Color.Gold,
-                            Title = "You're Up Next",
-                            Description = $"Your trade will begin very soon. Please be ready!{batchInfo}",
-                            Timestamp = DateTimeOffset.Now
-                        }.Build();
+                        var upNextEmbed = new EmbedBuilder()
+                            .WithTitle("⚡ You're Up Next!")
+                            .WithDescription($"Your trade will begin very soon. Please be ready!{batchInfo}")
+                            .WithColor(EmbedStyle.Amber)
+                            .WithNexusFooter("Get ready to enter your trade code")
+                            .Build();
 
                         try
                         {
@@ -170,21 +168,18 @@ public class DiscordTradeNotifier<T> : IPokeTradeNotifier<T>, IDisposable
 
             _lastReportedPosition = currentPosition;
 
-            var batchDescription = TotalBatchTrades > 1
-                ? $"Your batch trade request ({TotalBatchTrades} Pokémon) has been queued.\n\nâš ï¸ **Important Instructions:**\nâ€¢ Stay in the trade for all {TotalBatchTrades} trades\nâ€¢ Have all {TotalBatchTrades} Pokémon ready to trade\nâ€¢ Do not exit until you see the completion message\n\n**Queue Position**: {currentPosition}"
-                : $"Your trade request has been queued.\n**Queue Position**: {currentPosition}";
+            var batchInstructions = TotalBatchTrades > 1
+                ? $"\n\n⚠️ **Important Instructions:**\n• Stay in the trade for all **{TotalBatchTrades}** trades\n• Have all **{TotalBatchTrades}** Pokémon ready\n• Do not exit until complete!"
+                : "";
 
-            var initialEmbed = new EmbedBuilder
-            {
-                Color = Color.Green,
-                Title = TotalBatchTrades > 1 ? "Batch Trade Queued" : "Trade Request Queued",
-                Description = batchDescription,
-                Footer = new EmbedFooterBuilder
-                {
-                    Text = $"Wait: {(currentETA > 0 ? $"{currentETA} min" : "<1 min")} | {NexusBot.Version}"
-                },
-                Timestamp = DateTimeOffset.Now
-            }.Build();
+            var initialEmbed = new EmbedBuilder()
+                .WithTitle(TotalBatchTrades > 1 ? "📦 Batch Trade Queued" : "📥 Trade Request Queued")
+                .WithDescription($"Your trade request has been successfully queued.{batchInstructions}")
+                .AddField("Queue Position", $"` #{currentPosition} `", inline: true)
+                .AddField("Estimated Wait", $"` {(currentETA > 0 ? $"~{currentETA} min" : "<1 min")} `", inline: true)
+                .WithColor(EmbedStyle.Blurple)
+                .WithNexusFooter()
+                .Build();
 
             await Trader.SendMessageAsync(embed: initialEmbed).ConfigureAwait(false);
 

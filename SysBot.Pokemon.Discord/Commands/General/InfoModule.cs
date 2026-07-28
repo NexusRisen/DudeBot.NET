@@ -28,31 +28,31 @@ public class InfoModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new
         var heapSize = GetHeapSize();
 
         var embed = new EmbedBuilder()
-            .WithTitle("NexusBot.NET - Information")
-            .WithDescription("A high-performance Pokemon automation bot powered by PKHeX.Core.")
-            .WithColor(Color.Gold)
+            .WithTitle("🎮 NexusBot.NET — Information")
+            .WithDescription("A high-performance Pokémon automation bot powered by PKHeX.Core.")
+            .WithColor(EmbedStyle.Blurple)
             .WithThumbnailUrl(ThumbnailUrl)
-            .AddField("📊 Project Info",
-                $"{Format.Bold("Main Developer")}: [Nexus Risen]({WebsiteUrl})\n" +
+            .AddField("📊 Overview",
+                $"{Format.Bold("Developer")}: [Nexus Risen]({WebsiteUrl})\n" +
                 $"{Format.Bold("Owner")}: {app.Owner.Mention}\n" +
-                $"{Format.Bold("Mode")}: {gameName}\n" +
-                $"{Format.Bold("Version")}: {NexusBot.Version}", inline: true)
-            .AddField("🛠️ System Stats",
-                $"{Format.Bold("Uptime")}: {uptime}\n" +
-                $"{Format.Bold("Guilds")}: {Context.Client.Guilds.Count}\n" +
-                $"{Format.Bold("Users")}: {Context.Client.Guilds.Sum(g => (long)g.MemberCount)}\n" +
-                $"{Format.Bold("Memory")}: {heapSize} MiB", inline: true)
-            .AddField("👥 Contributors",
-                $"{Format.Bold("Nexus Risen")}: Project Lead & Developer\n" +
-                $"{Format.Bold("Secludedly")}: Medals, Refactoring & Feature Enhancements\n" +
-                $"{Format.Bold("Lusamine")}: Research & Data Analysis\n" +
-                $"{Format.Bold("Hexbyt3")}: Core Engine Enhancements\n" +
-                $"{Format.Bold("SantaCrab2")}: Auto-Legality Mod (ALM)")
-            .AddField("📦 Dependencies",
-                $"{Format.Bold("PKHeX.Core")}: {GetVersionInfo("PKHeX.Core")}\n" +
-                $"{Format.Bold("AutoLegality")}: {GetVersionInfo("PKHeX.Core.AutoMod")}\n" +
-                $"{Format.Bold("Base System")}: [SysBot.NET](https://github.com/kwsch/SysBot.NET)")
-            .WithFooter(footer => footer.Text = $"OS: {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})")
+                $"{Format.Bold("Engine Mode")}: {gameName}\n" +
+                $"{Format.Bold("Version")}: `{NexusBot.Version}`", inline: true)
+            .AddField("🛠️ System Diagnostics",
+                $"{Format.Bold("Uptime")}: `{uptime}`\n" +
+                $"{Format.Bold("Guilds")}: `{Context.Client.Guilds.Count}`\n" +
+                $"{Format.Bold("Users")}: `{Context.Client.Guilds.Sum(g => (long)g.MemberCount)}`\n" +
+                $"{Format.Bold("Memory")}: `{heapSize} MiB`", inline: true)
+            .AddField("📦 Core Engine & Dependencies",
+                $"{Format.Bold("PKHeX.Core")}: `{GetVersionInfo("PKHeX.Core")}`\n" +
+                $"{Format.Bold("AutoLegality")}: `{GetVersionInfo("PKHeX.Core.AutoMod")}`\n" +
+                $"{Format.Bold("Framework")}: [SysBot.NET](https://github.com/kwsch/SysBot.NET)", inline: false)
+            .AddField("👥 Credits & Contributors",
+                $"• {Format.Bold("Nexus Risen")} — Lead Developer\n" +
+                $"• {Format.Bold("Secludedly")} — Features & Medals System\n" +
+                $"• {Format.Bold("Lusamine")} — Research & Data Analysis\n" +
+                $"• {Format.Bold("Hexbyt3")} — Core Engine Enhancements\n" +
+                $"• {Format.Bold("SantaCrab2")} — Auto-Legality Mod", inline: false)
+            .WithNexusFooter($"OS: {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})")
             .Build();
 
         await ReplyAsync(embed: embed).ConfigureAwait(false);

@@ -15,13 +15,13 @@ public class AIModule : ModuleBase<SocketCommandContext>
         var prefix = SysCordSettings.Settings.CommandPrefix;
         
         var embed = new EmbedBuilder()
-            .WithTitle("🤖 AI Chatbot Help")
-            .WithDescription($"You can chat with me using advanced AI powered by Hugging Face!")
-            .AddField("How to Chat", $"Just mention me and ask a question!\nExample: {botMention} Give me a competitive Garchomp set.")
-            .AddField("Memory", "I remember the last few messages in our conversation, so you can ask follow-up questions.")
-            .AddField("Commands", $"`{prefix}clearAI` - Clears your conversation history if I get confused.")
-            .WithColor(Color.Blue)
-            .WithFooter("Note: I can only provide legal Pokemon sets!")
+            .WithTitle("🤖 AI Chatbot Assistant")
+            .WithDescription("Chat with me to generate competitive Pokémon sets or ask strategy questions!")
+            .AddField("💬 How to Chat", $"Mention me in chat with your request:\n> {botMention} Give me a competitive Garchomp set for Gen 9.")
+            .AddField("🧠 Conversation Memory", "I remember our recent context so you can ask follow-up questions or adjustments.")
+            .AddField("🧹 Commands", $"`{prefix}clearAI` — Resets conversation history for a fresh start.")
+            .WithColor(EmbedStyle.Amethyst)
+            .WithNexusFooter("Legal Pokémon sets verified automatically")
             .Build();
 
         await ReplyAsync(embed: embed).ConfigureAwait(false);
