@@ -14,6 +14,37 @@ namespace SysBot.Pokemon.Discord
     {
         private readonly CommandService _commandService = commandService;
 
+        private class CommandHelpInfo
+        {
+            public required string Name { get; set; }
+            public required string Summary { get; set; }
+            public List<string> Aliases { get; set; } = [];
+        }
+
+        private static string GetCategoryName(string rawModuleName)
+        {
+            var name = rawModuleName.Split('`')[0].Replace("Module", "");
+            return name switch
+            {
+                "Trade" or "Clone" or "Dump" or "SpecialRequest" or "Mystery" or "Pokepaste" => "🔄 Trading & Distribution",
+                "Queue" or "SeedCheck" or "Info" or "Ping" or "Report" or "Hello" or "AI" or "PokemonCommand" or "Pokemon" => "📊 Queue & Info",
+                "Bot" or "TradeStart" or "Hub" or "Log" or "Pool" or "Recovery" or "Echo" or "RemoteControl" or "BotAvatar" => "🤖 Bot Management",
+                "Sudo" or "Owner" => "🛡️ Sudo & Admin",
+                "LegalityCheck" or "Legalizer" or "BatchEditing" or "Joke" => "🎮 Extras & Utilities",
+                _ => "📁 General Commands"
+            };
+        }
+
+        private static readonly string[] CategoryOrder =
+        [
+            "🔄 Trading & Distribution",
+            "📊 Queue & Info",
+            "🤖 Bot Management",
+            "🛡️ Sudo & Admin",
+            "🎮 Extras & Utilities",
+            "📁 General Commands"
+        ];
+
         [Command("help")]
         [Summary("Shows the available commands.")]
         public async Task HelpAsync(int page = 1)
@@ -23,80 +54,96 @@ namespace SysBot.Pokemon.Discord
             var owner = app.Owner.Id;
             var uid = Context.User.Id;
 
-            var modules = _commandService.Modules.ToList();
-            var moduleList = new Dictionary<string, Dictionary<string, string>>();
+            var categorizedCommands = new Dictionary<string, Dictionary<string, CommandHelpInfo>>();
 
-            foreach (var module in modules)
+            foreach (var module in _commandService.Modules)
             {
-                var moduleName = module.Name;
-                var commandDict = new Dictionary<string, string>();
+                var category = GetCategoryName(module.Name);
+                if (!categorizedCommands.TryGetValue(category, out var cmdDict))
+                {
+                    cmdDict = new Dictionary<string, CommandHelpInfo>(StringComparer.OrdinalIgnoreCase);
+                    categorizedCommands[category] = cmdDict;
+                }
 
                 foreach (var command in module.Commands)
                 {
-                    if (command.CheckPreconditionsAsync(Context).GetAwaiter().GetResult().IsSuccess)
+                    var preconditionResult = await command.CheckPreconditionsAsync(Context).ConfigureAwait(false);
+                    if (!preconditionResult.IsSuccess)
+                        continue;
+
+                    if (command.Attributes.Any(a => a is RequireOwnerAttribute) && owner != uid)
+                        continue;
+                    if (command.Attributes.Any(a => a is RequireSudoAttribute) && !mgr.CanUseSudo(uid))
+                        continue;
+
+                    var cmdName = command.Name;
+                    var summary = command.Summary ?? "No description available.";
+                    var aliases = command.Aliases
+                        .Where(a => !a.Equals(cmdName, StringComparison.OrdinalIgnoreCase))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (!cmdDict.TryGetValue(cmdName, out var existing))
                     {
-                        if (command.Attributes.Any(a => a is RequireOwnerAttribute) && owner != uid)
-                            continue;
-                        if (command.Attributes.Any(a => a is RequireSudoAttribute) && !mgr.CanUseSudo(uid))
-                            continue;
-
-                        var commandName = command.Name;
-                        var commandSummary = command.Summary ?? "No description available.";
-
-                        if (!commandDict.ContainsKey(commandName))
-                            commandDict.Add(commandName, commandSummary);
+                        cmdDict[cmdName] = new CommandHelpInfo
+                        {
+                            Name = cmdName,
+                            Summary = summary,
+                            Aliases = aliases
+                        };
                     }
-                }
-
-                if (commandDict.Count > 0)
-                {
-                    var moduleSanitizedName = moduleName.Split('`')[0];
-
-                    var uniqueModuleName = moduleSanitizedName;
-                    var count = 1;
-                    while (moduleList.ContainsKey(uniqueModuleName))
+                    else
                     {
-                        uniqueModuleName = $"{moduleSanitizedName}_{count}";
-                        count++;
-                    }
+                        if (existing.Summary == "No description available." && summary != "No description available.")
+                            existing.Summary = summary;
 
-                    moduleList.Add(uniqueModuleName, commandDict);
+                        foreach (var alias in aliases)
+                        {
+                            if (!existing.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase))
+                                existing.Aliases.Add(alias);
+                        }
+                    }
                 }
             }
-
-            var sortedModules = moduleList.OrderByDescending(x => x.Key.StartsWith("TradeModule")).ThenBy(x => x.Key).ToList();
 
             var pages = new List<string>();
             var currentPage = new StringBuilder();
-            var lineCount = 0;
 
-            foreach (var module in sortedModules)
+            foreach (var category in CategoryOrder)
             {
-                currentPage.AppendLine($"**{module.Key}**");
-                lineCount++;
+                if (!categorizedCommands.TryGetValue(category, out var commands) || commands.Count == 0)
+                    continue;
 
-                foreach (var command in module.Value)
+                var blockBuilder = new StringBuilder();
+                blockBuilder.AppendLine($"**{category}**");
+
+                foreach (var cmd in commands.Values.OrderBy(c => c.Name))
                 {
-                    currentPage.AppendLine($"`{command.Key}` - {command.Value}");
-                    lineCount++;
+                    var aliasText = cmd.Aliases.Count > 0
+                        ? $" *(aliases: {string.Join(", ", cmd.Aliases.Select(a => $"`{a}`"))})*"
+                        : "";
+                    blockBuilder.AppendLine($"• `{cmd.Name}`{aliasText} — {cmd.Summary}");
+                }
+                blockBuilder.AppendLine();
 
-                    if (lineCount >= 45)
-                    {
-                        pages.Add(currentPage.ToString());
-                        currentPage.Clear();
-                        lineCount = 0;
-                    }
+                var blockStr = blockBuilder.ToString();
+                if (currentPage.Length + blockStr.Length > 1800 && currentPage.Length > 0)
+                {
+                    pages.Add(currentPage.ToString().TrimEnd());
+                    currentPage.Clear();
                 }
 
-                if (lineCount > 0)
-                {
-                    currentPage.AppendLine();
-                    lineCount++;
-                }
+                currentPage.Append(blockStr);
             }
 
             if (currentPage.Length > 0)
-                pages.Add(currentPage.ToString());
+                pages.Add(currentPage.ToString().TrimEnd());
+
+            if (pages.Count == 0)
+            {
+                await ReplyAsync("No commands available for your current permission level.");
+                return;
+            }
 
             var pageCount = pages.Count;
             if (page < 1 || page > pageCount)
@@ -151,14 +198,40 @@ namespace SysBot.Pokemon.Discord
                 .WithColor(EmbedStyle.Blurple)
                 .WithNexusFooter();
 
+            var addedCommands = new HashSet<string>();
+
             foreach (var match in searchResult.Commands)
             {
                 var cmd = match.Command;
+                var paramSyntax = string.Join(" ", cmd.Parameters.Select(p => p.IsOptional ? $"[{p.Name}]" : $"<{p.Name}>"));
+                var usage = string.IsNullOrWhiteSpace(paramSyntax) ? $"`{cmd.Name}`" : $"`{cmd.Name} {paramSyntax}`";
 
-                var parameters = cmd.Parameters.Select(p => $"• `{p.Name}` — {p.Summary}");
+                var key = $"{cmd.Name}:{usage}";
+                if (!addedCommands.Add(key))
+                    continue;
+
+                var aliases = cmd.Aliases
+                    .Where(a => !a.Equals(cmd.Name, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                var aliasStr = aliases.Count > 0 ? string.Join(", ", aliases.Select(a => $"`{a}`")) : "None";
+
+                var category = GetCategoryName(cmd.Module.Name);
+
+                var parameters = cmd.Parameters.Select(p =>
+                {
+                    var opt = p.IsOptional ? $" *(optional, default: {p.DefaultValue ?? "null"})*" : "";
+                    var summary = string.IsNullOrWhiteSpace(p.Summary) ? "" : $" — {p.Summary}";
+                    return $"• `{p.Name}` ({p.Type.Name}){opt}{summary}";
+                });
                 var parameterSummary = string.Join("\n", parameters);
 
-                embedBuilder.AddField($"Command: {cmd.Name}", $"{cmd.Summary}\n\n**Parameters:**\n{(string.IsNullOrEmpty(parameterSummary) ? "None" : parameterSummary)}", false);
+                var content = $"**Category:** {category}\n" +
+                              $"**Usage:** {usage}\n" +
+                              $"**Aliases:** {aliasStr}\n" +
+                              $"**Description:** {cmd.Summary ?? "No description available."}\n\n" +
+                              $"**Parameters:**\n{(string.IsNullOrEmpty(parameterSummary) ? "None" : parameterSummary)}";
+
+                embedBuilder.AddField($"Command: {cmd.Name}", content, false);
             }
 
             try

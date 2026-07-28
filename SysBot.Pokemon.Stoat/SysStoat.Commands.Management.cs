@@ -1,4 +1,4 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 using StoatSharp;
 using SysBot.Base;
 using SysBot.Pokemon.Stoat.Commands;
@@ -22,17 +22,29 @@ public partial class SysStoat<T>
     {
         var prefix = Hub.Config.Stoat.CommandPrefix;
         var description = $"Welcome to NexusBot!\n\n" +
-                          $"**Core Commands**:\n" +
-                          $"`{prefix}trade` or `{prefix}t` - Trade a Pokémon using a Showdown set or attachment.\n" +
-                          $"`{prefix}batchtrade` or `{prefix}bt` - Trade multiple Pokémon at once.\n" +
+                          $"**🔄 Trade & Distribution Commands**:\n" +
+                          $"`{prefix}trade` (or `{prefix}t`) - Trade a Pokémon using a Showdown set or attachment.\n" +
+                          $"`{prefix}batchtrade` (or `{prefix}bt`) - Trade multiple Pokémon at once.\n" +
+                          $"`{prefix}clone` (or `{prefix}c`) - Clone a Pokémon shown via link trade.\n" +
+                          $"`{prefix}hidetrade` (or `{prefix}ht`) - Trade with code sent via direct message.\n" +
                           $"`{prefix}egg` - Generate an egg from a Showdown set.\n" +
-                          $"`{prefix}mysteryegg` or `{prefix}me` - Request a random Mystery Egg.\n" +
-                          $"`{prefix}itemtrade` or `{prefix}it` - Trade for a specific item.\n\n" +
-                          $"**Utility Commands**:\n" +
-                          $"`{prefix}queuestatus` or `{prefix}qs` - Check your queue position.\n" +
-                          $"`{prefix}queueclear` or `{prefix}qc` - Leave the queue.\n" +
-                          $"`{prefix}about` - View bot stats and uptime.\n\n" +
-                          $"For a full list of commands and detailed usage, visit our documentation: https://nexusbot.org";
+                          $"`{prefix}mysteryegg` (or `{prefix}me`) - Request a random Mystery Egg.\n" +
+                          $"`{prefix}mysterypokemon` (or `{prefix}mp`) - Request a random Mystery Pokémon.\n" +
+                          $"`{prefix}itemtrade` (or `{prefix}it`) - Trade for a specific item.\n" +
+                          $"`{prefix}dittotrade` (or `{prefix}dt`) - Trade for a specialized Ditto.\n" +
+                          $"`{prefix}fixot` (or `{prefix}f`) - Fix Trainer Info on a Pokémon.\n" +
+                          $"`{prefix}pokepaste` (or `{prefix}pp`) - Import Pokémon sets from a PokePaste URL.\n" +
+                          $"`{prefix}specialrequestpokemon` (or `{prefix}srp`) - Request special event Pokémon.\n\n" +
+                          $"**📊 Queue & Utility Commands**:\n" +
+                          $"`{prefix}queuestatus` (or `{prefix}qs`) - Check your trade queue position.\n" +
+                          $"`{prefix}queueclear` (or `{prefix}qc`) - Leave/clear the trade queue.\n" +
+                          $"`{prefix}medals` (or `{prefix}ml`) - View user trade achievements and medals.\n" +
+                          $"`{prefix}about` - View bot stats, uptime, and version info.\n\n" +
+                          $"**🤖 Management Commands**:\n" +
+                          $"`{prefix}deletetradecode` (or `{prefix}dtc`) - Remove an active trade code.\n" +
+                          $"`{prefix}tradestart` (or `{prefix}ts`) - Toggle trade start notifications.\n" +
+                          $"`{prefix}id` - View user and channel identifier information.\n\n" +
+                          $"For detailed documentation, visit: https://nexusbot.org";
 
         var embed = EmbedHelper.CreateEmbed(
             title: "NexusBot Commands & Help",
