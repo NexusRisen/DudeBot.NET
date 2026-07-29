@@ -233,17 +233,17 @@ public static class QueueHelper<T> where T : PKM, new()
         return new TradeQueueResult(true);
     }
 
-    public static async Task AddBatchContainerToQueueAsync(SocketCommandContext context, int code, string trainer, T firstTrade, List<T> allTrades, RequestSignificance sig, SocketUser trader, int totalBatchTrades, bool ignoreAutoOT = false, bool isHiddenTrade = false)
+    public static async Task AddBatchContainerToQueueAsync(SocketCommandContext context, int code, string trainer, T firstTrade, List<T> allTrades, RequestSignificance sig, SocketUser trader, int totalBatchTrades, bool ignoreAutoOT = false, bool isHiddenTrade = false, bool isMysteryEgg = false)
     {
         var userID = trader.Id;
         var name = trader.Username;
         var trainer_info = new PokeTradeTrainerInfo(trainer, userID);
-        var notifier = new DiscordTradeNotifier<T>(firstTrade, trainer_info, code, trader, 1, totalBatchTrades, false, lgcode: [], fallbackChannel: context.Channel);
+        var notifier = new DiscordTradeNotifier<T>(firstTrade, trainer_info, code, trader, 1, totalBatchTrades, isMysteryEgg, lgcode: [], fallbackChannel: context.Channel);
 
         int uniqueTradeID = TradeUtil.GenerateUniqueTradeID();
 
         var detail = new PokeTradeDetail<T>(firstTrade, trainer_info, notifier, PokeTradeType.Batch, code,
-            sig == RequestSignificance.Favored, null, 1, totalBatchTrades, false, isHiddenTrade, uniqueTradeID, ignoreAutoOT)
+            sig == RequestSignificance.Favored, null, 1, totalBatchTrades, isMysteryEgg, isHiddenTrade, uniqueTradeID, ignoreAutoOT)
         {
             BatchTrades = allTrades
         };

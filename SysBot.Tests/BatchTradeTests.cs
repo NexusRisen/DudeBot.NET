@@ -26,6 +26,24 @@ public class BatchTradeTests
         result[2].Should().Contain("Ditto");
     }
 
+    [Fact]
+    public void ParseBatchTradeContent_SplitsOnEachLineWithOrWithoutDelimiters()
+    {
+        string contentWithDashes = "Pikachu @ Light Ball ---\nEevee @ Eviolite ---\nDitto @ Choice Scarf";
+        var resultDashes = TradeModuleHelpers.ParseBatchTradeContent(contentWithDashes);
+        resultDashes.Should().HaveCount(3);
+        resultDashes[0].Should().Be("Pikachu @ Light Ball");
+        resultDashes[1].Should().Be("Eevee @ Eviolite");
+        resultDashes[2].Should().Be("Ditto @ Choice Scarf");
+
+        string contentLinesOnly = "Pikachu @ Light Ball\nEevee @ Eviolite\nDitto @ Choice Scarf";
+        var resultLines = TradeModuleHelpers.ParseBatchTradeContent(contentLinesOnly);
+        resultLines.Should().HaveCount(3);
+        resultLines[0].Should().Be("Pikachu @ Light Ball");
+        resultLines[1].Should().Be("Eevee @ Eviolite");
+        resultLines[2].Should().Be("Ditto @ Choice Scarf");
+    }
+
     [Theory]
     [InlineData("Scale: XXXS", ".Scale=0")]
     [InlineData("Scale: XXXL", ".Scale=255")]
@@ -95,5 +113,27 @@ Level: 100
                 new LegalityAnalysis(pk).Valid.Should().BeTrue();
             }
         }
+    }
+
+    [Fact]
+    public void ParseBatchItemContent_ParsesQuantitiesAndDelimiters()
+    {
+        string input = "3 Master Ball, 2 Ability Patch, Gold Bottle Cap x 2, Leftovers 3";
+        var items = TradeModuleHelpers.ParseBatchItemContent(input);
+
+        items.Should().HaveCount(10);
+        items.Count(i => i == "Master Ball").Should().Be(3);
+        items.Count(i => i == "Ability Patch").Should().Be(2);
+        items.Count(i => i == "Gold Bottle Cap").Should().Be(2);
+        items.Count(i => i == "Leftovers").Should().Be(3);
+    }
+
+    [Fact]
+    public void ParseEventIndices_ParsesListsAndRanges()
+    {
+        string input = "1-3, 5 7-8";
+        var indices = TradeModuleHelpers.ParseEventIndices(input);
+
+        indices.Should().Equal(new[] { 1, 2, 3, 5, 7, 8 });
     }
 }

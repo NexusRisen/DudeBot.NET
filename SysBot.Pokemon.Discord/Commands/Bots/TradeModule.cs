@@ -231,6 +231,11 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
                 var normalizedContent = BatchNormalizer.NormalizeBatchCommands(content);
                 normalizedContent = ReusableActions.StripCodeBlock(normalizedContent);
                 var trades = isBatch ? BatchHelpers<T>.ParseBatchTradeContent(normalizedContent) : [normalizedContent];
+                if (isBatch && trades.Count == 1 && (normalizedContent.Contains(',') || normalizedContent.Contains('\n') || normalizedContent.Contains(';')))
+                {
+                    var eggDelimiters = new[] { ",", ";", "\n" };
+                    trades = normalizedContent.Split(eggDelimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                }
 
                 if (!isBatch && content.Contains("---"))
                 {
@@ -469,7 +474,7 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
     }
 
     [Command("itemTrade")]
-    [Alias("it", "item")]
+    [Alias("it", "item", "bit", "batchitem", "bitem", "batchItemTrade")]
     [Summary("Makes the bot trade you a Pokémon holding the requested item.")]
     public async Task ItemTrade([Remainder] string item)
     {
@@ -486,7 +491,7 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
     }
 
     [Command("itemTrade")]
-    [Alias("it", "item")]
+    [Alias("it", "item", "bit", "batchitem", "bitem", "batchItemTrade")]
     [Summary("Makes the bot trade you a Pokémon holding the requested item.")]
     public async Task ItemTrade([Summary("Trade Code")] int code, [Remainder] string item)
     {
@@ -503,7 +508,8 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
 
     private async Task ProcessItemTradeAsync(int code, string item)
     {
-        var itemNames = item.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var itemNamesList = TradeModuleHelpers.ParseBatchItemContent(item);
+        var itemNames = itemNamesList.ToArray();
         var batchSettings = SysCord<T>.Runner.Config.Trade.BatchSettings;
         var maxItemBatch = batchSettings.MaxItemBatchAmount;
 
@@ -775,7 +781,6 @@ public class TradeModule<T> : ModuleBase<SocketCommandContext> where T : PKM, ne
                 if (errors.Count > 0)
                 {
                     await BatchHelpers<T>.SendBatchErrorEmbedAsync(Context, errors, totalRequested);
-                    return;
                 }
 
                 if (batchPokemonList.Count > 0)

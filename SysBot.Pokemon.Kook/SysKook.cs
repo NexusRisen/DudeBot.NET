@@ -33,10 +33,13 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
     private readonly HashSet<string> _validCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "trade", "t", "clone", "c", "fixOT", "fix", "f", "dittoTrade", "ditto", "dt", "itemTrade", "item", "it",
-        "egg", "Egg", "hidetrade", "ht", "batchTrade", "bt",
+        "bit", "batchitem", "bitem", "batchitemtrade",
+        "egg", "Egg", "begg", "beggs", "hidetrade", "ht", "batchTrade", "bt",
         "pokepaste", "pp",
         "PokePaste", "PP", "randomteam", "rt", "RandomTeam", "Rt", "specialrequestpokemon", "srp",
+        "batchspecialrequestpokemon", "bsrp",
         "queueStatus", "qs", "queueClear", "qc", "ts", "tc", "deleteTradeCode", "dtc", "mysteryegg", "me",
+        "batchmysteryegg", "bme", "mysterypokemon", "mp", "batchmysterypokemon", "bmp",
         "medals", "ml"
     };
 
@@ -290,7 +293,7 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
             if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
             await HandleTradeCommandAsync(message, parts.Skip(1).ToList());
         }
-        else if (cmd == "itemtrade" || cmd == "item" || cmd == "it")
+        else if (cmd == "itemtrade" || cmd == "item" || cmd == "it" || cmd == "bit" || cmd == "batchitem" || cmd == "bitem" || cmd == "batchitemtrade")
         {
             if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
             await HandleItemTradeCommandAsync(message, parts.Skip(1).ToList());
@@ -329,10 +332,30 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
             if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
             await HandleEggCommandAsync(message, parts.Skip(1).ToList());
         }
+        else if (cmd == "begg" || cmd == "beggs")
+        {
+            if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
+            await HandleBatchEggCommandAsync(message, parts.Skip(1).ToList());
+        }
         else if (cmd == "mysteryegg" || cmd == "me")
         {
             if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
             await HandleMysteryEggCommandAsync(message);
+        }
+        else if (cmd == "batchmysteryegg" || cmd == "bme")
+        {
+            if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
+            await HandleBatchMysteryEggCommandAsync(message, parts.Skip(1).ToList());
+        }
+        else if (cmd == "mysterypokemon" || cmd == "mp")
+        {
+            if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
+            await HandleMysteryPokemonCommandAsync(message);
+        }
+        else if (cmd == "batchmysterypokemon" || cmd == "bmp")
+        {
+            if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
+            await HandleBatchMysteryPokemonCommandAsync(message, parts.Skip(1).ToList());
         }
         else if (cmd == "batchtrade" || cmd == "bt")
         {
@@ -348,6 +371,11 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
         {
             if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
             await HandleSpecialRequestPokemonCommandAsync(message, parts.Skip(1).ToList());
+        }
+        else if (cmd == "batchspecialrequestpokemon" || cmd == "bsrp")
+        {
+            if (!await CheckPermissions(message, Hub.Config.Kook.RoleCanTrade)) return;
+            await HandleBatchSpecialRequestPokemonCommandAsync(message, parts.Skip(1).ToList());
         }
         else if (cmd == "deletetradecode" || cmd == "dtc")
         {
@@ -445,7 +473,8 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
         }
 
         var itemInput = string.Join(" ", args);
-        var itemNames = itemInput.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var itemNamesList = TradeModuleHelpers.ParseBatchItemContent(itemInput);
+        var itemNames = itemNamesList.ToArray();
         
         if (typeof(T) == typeof(PB7) && itemNames.Length > 1)
         {
@@ -633,6 +662,58 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
         }
     }
 
+    private async Task HandleBatchEggCommandAsync(SocketMessage message, List<string> args)
+    {
+        if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowEggBatchTrades)
+        {
+            await message.Channel.SendTextAsync("Batch egg trades are disabled.");
+            return;
+        }
+
+        string rawContent = message.Content;
+        var spaceIdx = rawContent.IndexOf(' ');
+        string content = spaceIdx >= 0 ? rawContent[(spaceIdx + 1)..].Trim() : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(content)) return;
+
+        var normalizedContent = BatchNormalizer.NormalizeBatchCommands(content);
+        var trades = TradeModuleHelpers.ParseBatchTradeContent(normalizedContent);
+
+        if (trades.Count == 1 && (normalizedContent.Contains(',') || normalizedContent.Contains('\n') || normalizedContent.Contains(';')))
+        {
+            var eggDelimiters = new[] { ",", ";", "\n" };
+            trades = normalizedContent.Split(eggDelimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        }
+
+        if (trades.Count == 0 || trades.Count > batchSettings.MaxEggsPerBatch) return;
+
+        var pkmList = new List<T>();
+        foreach (var tStr in trades)
+        {
+            var set = new ShowdownSet(tStr);
+            var template = AutoLegalityWrapper.GetTemplate(set);
+            var sav = AutoLegalityWrapper.GetTrainerInfo<T>();
+            var pkm = AutoLegalityWrapper.GenerateEgg(sav, template, out var result);
+
+            if (result == LegalizationResult.Regenerated && pkm != null)
+            {
+                if (APILegality.AllowTrainerOverride && template.Regen.Trainer != null)
+                    pkm.SetAllTrainerData(template.Regen.Trainer);
+                pkm = EntityConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
+                if (pkm is T pk)
+                {
+                    pk.ResetPartyStats();
+                    pkmList.Add(pk);
+                }
+            }
+        }
+
+        if (pkmList.Count > 0)
+            await KookHelper<T>.AddBatchContainerToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, pkmList[0], pkmList, message.Author, _client);
+    }
+
     private async Task HandleMysteryEggCommandAsync(SocketMessage message)
     {
         if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
@@ -641,11 +722,66 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
             await KookHelper<T>.AddToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, egg, message.Author, _client);
     }
 
+    private async Task HandleBatchMysteryEggCommandAsync(SocketMessage message, List<string> args)
+    {
+        if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryEggBatchTrades) return;
+
+        int count = batchSettings.MaxMysteryEggsPerBatch;
+        if (args.Count > 0 && int.TryParse(args[0], out int parsedCount) && parsedCount > 0)
+            count = Math.Clamp(parsedCount, 1, batchSettings.MaxMysteryEggsPerBatch);
+
+        var eggs = new List<T>();
+        for (int i = 0; i < count; i++)
+        {
+            var egg = TradeModuleHelpers.GenerateLegalMysteryEgg<T>();
+            if (egg != null) eggs.Add(egg);
+        }
+
+        if (eggs.Count > 0)
+            await KookHelper<T>.AddBatchContainerToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, eggs[0], eggs, message.Author, _client);
+    }
+
+    private async Task HandleMysteryPokemonCommandAsync(SocketMessage message)
+    {
+        if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        var pk = TradeModuleHelpers.GenerateLegalMysteryPokemon<T>();
+        if (pk != null)
+            await KookHelper<T>.AddToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, pk, message.Author, _client);
+    }
+
+    private async Task HandleBatchMysteryPokemonCommandAsync(SocketMessage message, List<string> args)
+    {
+        if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryPokemonBatchTrades) return;
+
+        int count = batchSettings.MaxMysteryPokemonPerBatch;
+        if (args.Count > 0 && int.TryParse(args[0], out int parsedCount) && parsedCount > 0)
+            count = Math.Clamp(parsedCount, 1, batchSettings.MaxMysteryPokemonPerBatch);
+
+        var pkmList = new List<T>();
+        for (int i = 0; i < count; i++)
+        {
+            var pk = TradeModuleHelpers.GenerateLegalMysteryPokemon<T>();
+            if (pk != null) pkmList.Add(pk);
+        }
+
+        if (pkmList.Count > 0)
+            await KookHelper<T>.AddBatchContainerToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, pkmList[0], pkmList, message.Author, _client);
+    }
+
     private async Task HandleBatchTradeCommandAsync(SocketMessage message, List<string> args)
     {
-        if (args.Count == 0 || Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
-        var sets = TradeModuleHelpers.ParseBatchTradeContent(BatchNormalizer.NormalizeBatchCommands(string.Join(" ", args)));
-        if (sets.Count > Hub.Config.Trade.BatchSettings.MaxPkmsPerTrade) return;
+        if (Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        string rawContent = message.Content;
+        var spaceIdx = rawContent.IndexOf(' ');
+        string content = spaceIdx >= 0 ? rawContent[(spaceIdx + 1)..].Trim() : string.Empty;
+        if (string.IsNullOrWhiteSpace(content)) return;
+
+        var sets = TradeModuleHelpers.ParseBatchTradeContent(BatchNormalizer.NormalizeBatchCommands(content));
+        if (sets.Count == 0 || sets.Count > Hub.Config.Trade.BatchSettings.MaxPkmsPerTrade) return;
 
         var pkmList = new List<T>();
         foreach (var s in sets)
@@ -656,6 +792,35 @@ public sealed class SysKook<T> : IDisposable where T : PKM, new()
 
         if (pkmList.Count > 0)
             await KookHelper<T>.AddBatchContainerToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, pkmList[0], pkmList, message.Author, _client);
+    }
+
+    private async Task HandleBatchSpecialRequestPokemonCommandAsync(SocketMessage message, List<string> args)
+    {
+        if (args.Count < 2 || Hub.Queues.Info.IsUserInQueue(message.Author.Id)) return;
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryGiftBatchTrades) return;
+
+        string gen = args[0];
+        string indicesInput = string.Join(" ", args.Skip(1));
+        var indices = TradeModuleHelpers.ParseEventIndices(indicesInput);
+
+        if (indices.Count == 0 || indices.Count > batchSettings.MaxMysteryGiftsPerBatch) return;
+
+        var eventData = TradeModuleHelpers.GetEventData(gen);
+        if (eventData == null) return;
+
+        var entityEvents = eventData.Where(gift => gift.IsEntity && !gift.IsItem).ToArray();
+        var pkList = new List<T>();
+        foreach (var idx in indices)
+        {
+            if (idx < 1 || idx > entityEvents.Length) continue;
+            var selectedEvent = entityEvents[idx - 1];
+            var pk = TradeModuleHelpers.ConvertEventToPKM<T>(selectedEvent);
+            if (pk != null) pkList.Add(pk);
+        }
+
+        if (pkList.Count > 0)
+            await KookHelper<T>.AddBatchContainerToQueueAsync(message, Hub.Queues.Info.GetRandomTradeCode(message.Author.Id), message.Author.Username, pkList[0], pkList, message.Author, _client);
     }
 
     private async Task HandlePokepasteCommandAsync(SocketMessage message, List<string> args)

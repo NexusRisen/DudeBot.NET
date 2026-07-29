@@ -12,10 +12,112 @@ public static class TradeModuleHelpers
     private static readonly Dictionary<EntityContext, List<ushort>> LegalSpeciesCache = [];
     private const int DefaultMaxGenerationAttempts = 30;
 
+    private static readonly System.Text.RegularExpressions.Regex ItemPrefixRegex = new(@"^(\d+)\s*[xX*]?\s+(.+)$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Text.RegularExpressions.Regex ItemSuffixRegex = new(@"^(.+?)\s+[xX*]?\s*(\d+)$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     public static List<string> ParseBatchTradeContent(string content)
     {
+        if (string.IsNullOrWhiteSpace(content))
+            return [];
+
         var delimiters = new[] { "---", "—-" };
-        return [.. content.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Select(trade => trade.Trim())];
+        var sets = content.Split(delimiters, StringSplitOptions.RemoveEmptyEntries)
+                          .Select(trade => trade.Trim())
+                          .Where(trade => !string.IsNullOrWhiteSpace(trade))
+                          .ToList();
+
+        if (sets.Count <= 1 && (content.Contains('\n') || content.Contains(',') || content.Contains(';')) && !content.Contains("---") && !content.Contains("—-"))
+        {
+            var lineDelimiters = new[] { "\n", "\r", ",", ";" };
+            var lineSets = content.Split(lineDelimiters, StringSplitOptions.RemoveEmptyEntries)
+                                  .Select(trade => trade.Trim())
+                                  .Where(trade => !string.IsNullOrWhiteSpace(trade))
+                                  .ToList();
+            if (lineSets.Count > 1)
+                return lineSets;
+        }
+
+        return sets;
+    }
+
+    public static List<string> ParseBatchItemContent(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return [];
+
+        var delimiters = new[] { ",", ";", "\n", "---", "—-" };
+        var rawEntries = input.Split(delimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var result = new List<string>();
+
+        foreach (var rawEntry in rawEntries)
+        {
+            var entry = rawEntry.Trim();
+            if (string.IsNullOrWhiteSpace(entry))
+                continue;
+
+            int count = 1;
+            string itemName = entry;
+
+            var matchPrefix = ItemPrefixRegex.Match(entry);
+            if (matchPrefix.Success && int.TryParse(matchPrefix.Groups[1].Value, out int pCount) && pCount > 0)
+            {
+                count = Math.Min(pCount, 30);
+                itemName = matchPrefix.Groups[2].Value.Trim();
+            }
+            else
+            {
+                var matchSuffix = ItemSuffixRegex.Match(entry);
+                if (matchSuffix.Success && int.TryParse(matchSuffix.Groups[2].Value, out int sCount) && sCount > 0)
+                {
+                    count = Math.Min(sCount, 30);
+                    itemName = matchSuffix.Groups[1].Value.Trim();
+                }
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                result.Add(itemName);
+            }
+        }
+
+        return result;
+            }
+
+    public static List<int> ParseEventIndices(string input)
+    {
+        var indices = new List<int>();
+        if (string.IsNullOrWhiteSpace(input))
+            return indices;
+
+        var parts = input.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var part in parts)
+        {
+            if (part.Contains('-'))
+            {
+                var rangeParts = part.Split('-');
+                if (rangeParts.Length == 2 && int.TryParse(rangeParts[0], out int start) && int.TryParse(rangeParts[1], out int end))
+                {
+                    if (start <= end)
+                    {
+                        for (int i = start; i <= end; i++)
+                            indices.Add(i);
+                    }
+                    else
+                    {
+                        for (int i = start; i >= end; i--)
+                            indices.Add(i);
+                    }
+                    continue;
+                }
+            }
+
+            if (int.TryParse(part, out int idx))
+            {
+                indices.Add(idx);
+            }
+        }
+
+        return indices;
     }
 
     public static MysteryGift[]? GetEventData(string generationOrGame)
@@ -152,26 +254,31 @@ public static class TradeModuleHelpers
             foreach (var species in shuffled)
             {
                 var speciesName = GameInfo.Strings.Species[species];
-                var setString = $"{speciesName}\nShiny: Yes\nIVs: 31/31/31/31/31/31";
-                
+                var attempts = new List<string> { $"{speciesName}\nShiny: Yes" };
+
                 var hiddenAbilityName = GetHiddenAbilityName(species, context);
                 if (!string.IsNullOrEmpty(hiddenAbilityName))
-                    setString += $"\nAbility: {hiddenAbilityName}";
+                    attempts.Insert(0, $"{speciesName}\nShiny: Yes\nAbility: {hiddenAbilityName}");
 
-                var set = new ShowdownSet(setString);
-                var template = AutoLegalityWrapper.GetTemplate(set);
-                var pk = sav.GetLegal(template, out var result);
+                attempts.Add(speciesName);
 
-                if (pk == null)
-                    continue;
+                foreach (var setString in attempts)
+                {
+                    var set = new ShowdownSet(setString);
+                    var template = AutoLegalityWrapper.GetTemplate(set);
+                    var pk = sav.GetLegal(template, out _);
 
-                pk = EntityConverter.ConvertToType(pk, typeof(T), out _) ?? pk;
-                if (pk is not T validPk)
-                    continue;
+                    if (pk == null)
+                        continue;
 
-                var la = new LegalityAnalysis(validPk);
-                if (SimpleLegalityFeedback.IsEffectivelyLegal(validPk, la))
-                    return validPk;
+                    pk = EntityConverter.ConvertToType(pk, typeof(T), out _) ?? pk;
+                    if (pk is not T validPk)
+                        continue;
+
+                    var la = new LegalityAnalysis(validPk);
+                    if (SimpleLegalityFeedback.IsEffectivelyLegal(validPk, la))
+                        return validPk;
+                }
             }
         }
         finally
@@ -274,16 +381,7 @@ public static class TradeModuleHelpers
         return legal;
     }
 
-    private static EntityContext GetContext<T>() where T : PKM, new() => typeof(T).Name switch
-    {
-        "PB8" => EntityContext.Gen8b,
-        "PK8" => EntityContext.Gen8,
-        "PA8" => EntityContext.Gen8a,
-        "PK9" => EntityContext.Gen9,
-        "PA9" => EntityContext.Gen9,
-        "PB7" => EntityContext.Gen7b,
-        _ => EntityContext.None
-    };
+    private static EntityContext GetContext<T>() where T : PKM, new() => new T().Context;
 
     private static List<GameVersion> GetPriorityOrder(EntityContext context) => context switch
     {

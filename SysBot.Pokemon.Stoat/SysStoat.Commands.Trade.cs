@@ -102,7 +102,7 @@ public partial class SysStoat<T>
         await StoatHelper<T>.AddToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, result.Pokemon, message.AuthorId, message.Author!.Username, lgCode, isHiddenTrade);
     }
 
-    [StoatCommand("itemtrade", "item", "it")]
+    [StoatCommand("itemtrade", "item", "it", "bit", "batchitem", "bitem", "batchitemtrade")]
     private async Task HandleItemTradeCommandAsync(UserMessage message, List<string> args)
     {
         if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
@@ -115,17 +115,18 @@ public partial class SysStoat<T>
 
         int code = 0;
         string itemNamesStr = string.Empty;
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
 
-        if (int.TryParse(args[0], out code))
+        if (args.Count > 1 && int.TryParse(args[0], out code) && code >= 1000)
             itemNamesStr = string.Join(" ", args.Skip(1));
         else
         {
-            ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
             code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
             itemNamesStr = string.Join(" ", args);
         }
 
-        var itemNames = itemNamesStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var itemNamesList = TradeModuleHelpers.ParseBatchItemContent(itemNamesStr);
+        var itemNames = itemNamesList.ToArray();
         var batchSettings = Hub.Config.Trade.BatchSettings;
         var maxItemBatch = batchSettings.MaxItemBatchAmount;
 
@@ -184,11 +185,270 @@ public partial class SysStoat<T>
             return;
         }
 
-        ulong numericId = StoatHelper<T>.ConvertId(message.AuthorId);
         if (pkmList.Count == 1)
             await StoatHelper<T>.AddToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], message.AuthorId, message.Author!.Username);
         else
             await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], pkmList, message.AuthorId, message.Author!.Username);
+    }
+
+    [StoatCommand("batchmysteryegg", "bme")]
+    private async Task HandleBatchMysteryEggCommandAsync(UserMessage message, List<string> args)
+    {
+        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
+
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryEggBatchTrades)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch Mystery Eggs are disabled.");
+            return;
+        }
+
+        int count = batchSettings.MaxMysteryEggsPerBatch;
+        if (args.Count > 0 && int.TryParse(args[0], out int parsedCount) && parsedCount > 0)
+            count = Math.Clamp(parsedCount, 1, batchSettings.MaxMysteryEggsPerBatch);
+
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
+        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
+        var eggs = new List<T>();
+        for (int i = 0; i < count; i++)
+        {
+            var egg = TradeModuleHelpers.GenerateLegalMysteryEgg<T>();
+            if (egg != null) eggs.Add(egg);
+        }
+
+        if (eggs.Count == 0)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Failed to generate Mystery Eggs.");
+            return;
+        }
+
+        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, eggs[0], eggs, message.AuthorId, message.Author!.Username);
+    }
+
+    [StoatCommand("batchmysterypokemon", "bmp")]
+    private async Task HandleBatchMysteryPokemonCommandAsync(UserMessage message, List<string> args)
+    {
+        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
+
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryPokemonBatchTrades)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch Mystery Pokémon are disabled.");
+            return;
+        }
+
+        int count = batchSettings.MaxMysteryPokemonPerBatch;
+        if (args.Count > 0 && int.TryParse(args[0], out int parsedCount) && parsedCount > 0)
+            count = Math.Clamp(parsedCount, 1, batchSettings.MaxMysteryPokemonPerBatch);
+
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
+        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
+        var pkmList = new List<T>();
+        for (int i = 0; i < count; i++)
+        {
+            var pk = TradeModuleHelpers.GenerateLegalMysteryPokemon<T>();
+            if (pk != null) pkmList.Add(pk);
+        }
+
+        if (pkmList.Count == 0)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Failed to generate Mystery Pokémon.");
+            return;
+        }
+
+        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], pkmList, message.AuthorId, message.Author!.Username);
+    }
+
+    [StoatCommand("batchspecialrequestpokemon", "bsrp")]
+    private async Task HandleBatchSpecialRequestPokemonCommandAsync(UserMessage message, List<string> args)
+    {
+        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
+
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowMysteryGiftBatchTrades)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch Mystery Gifts are disabled.");
+            return;
+        }
+
+        if (args.Count < 2)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Usage: $bsrp [gen/game] [index1,index2...]");
+            return;
+        }
+
+        string gen = args[0];
+        string indicesInput = string.Join(" ", args.Skip(1));
+        var indices = TradeModuleHelpers.ParseEventIndices(indicesInput);
+
+        if (indices.Count == 0 || indices.Count > batchSettings.MaxMysteryGiftsPerBatch)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, $"Please provide between 1 and {batchSettings.MaxMysteryGiftsPerBatch} event indices.");
+            return;
+        }
+
+        var eventData = TradeModuleHelpers.GetEventData(gen);
+        if (eventData == null)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, $"Invalid generation or game: {gen}");
+            return;
+        }
+
+        var entityEvents = eventData.Where(gift => gift.IsEntity && !gift.IsItem).ToArray();
+        var pkList = new List<T>();
+        foreach (var idx in indices)
+        {
+            if (idx < 1 || idx > entityEvents.Length) continue;
+            var selectedEvent = entityEvents[idx - 1];
+            var pk = TradeModuleHelpers.ConvertEventToPKM<T>(selectedEvent);
+            if (pk != null) pkList.Add(pk);
+        }
+
+        if (pkList.Count == 0)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "No valid events found.");
+            return;
+        }
+
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
+        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
+        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkList[0], pkList, message.AuthorId, message.Author!.Username);
+    }
+
+    [StoatCommand("begg", "beggs")]
+    private async Task HandleBatchEggCommandAsync(UserMessage message, List<string> args)
+    {
+        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
+
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowEggBatchTrades)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch egg trades are disabled.");
+            return;
+        }
+
+        string rawContent = message.Content;
+        var spaceIdx = rawContent.IndexOf(' ');
+        string content = spaceIdx >= 0 ? rawContent[(spaceIdx + 1)..].Trim() : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Please provide egg names or sets.");
+            return;
+        }
+
+        var normalizedContent = BatchNormalizer.NormalizeBatchCommands(content);
+        var trades = TradeModuleHelpers.ParseBatchTradeContent(normalizedContent);
+
+        if (trades.Count == 1 && (normalizedContent.Contains(',') || normalizedContent.Contains('\n') || normalizedContent.Contains(';')))
+        {
+            var eggDelimiters = new[] { ",", ";", "\n" };
+            trades = normalizedContent.Split(eggDelimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        }
+
+        if (trades.Count == 0 || trades.Count > batchSettings.MaxEggsPerBatch)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, $"You can only request up to {batchSettings.MaxEggsPerBatch} eggs at a time.");
+            return;
+        }
+
+        var pkmList = new List<T>();
+        foreach (var tStr in trades)
+        {
+            var set = new ShowdownSet(tStr);
+            var template = AutoLegalityWrapper.GetTemplate(set);
+            var sav = AutoLegalityWrapper.GetTrainerInfo<T>();
+            var pkm = AutoLegalityWrapper.GenerateEgg(sav, template, out var result);
+
+            if (result == LegalizationResult.Regenerated && pkm != null)
+            {
+                if (APILegality.AllowTrainerOverride && template.Regen.Trainer != null)
+                    pkm.SetAllTrainerData(template.Regen.Trainer);
+                pkm = EntityConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
+                if (pkm is T pk)
+                {
+                    pk.ResetPartyStats();
+                    pkmList.Add(pk);
+                }
+            }
+        }
+
+        if (pkmList.Count == 0)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Failed to generate eggs.");
+            return;
+        }
+
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
+        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
+        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], pkmList, message.AuthorId, message.Author!.Username);
+    }
+
+    [StoatCommand("batchtrade", "bt")]
+    private async Task HandleBatchTradeCommandAsync(UserMessage message, List<string> args)
+    {
+        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
+
+        string rawContent = message.Content;
+        var spaceIdx = rawContent.IndexOf(' ');
+        string content = spaceIdx >= 0 ? rawContent[(spaceIdx + 1)..].Trim() : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(content) && message.Attachments?.Count > 0)
+        {
+            try 
+            {
+                var data = await SysBot.Pokemon.Helpers.NetUtil.HttpClient.GetByteArrayAsync("https://cdn.stoatusercontent.com/attachments/" + message.Attachments[0].Id + "/" + Uri.EscapeDataString(message.Attachments[0].Filename));
+                var pkmInfo = EntityFormat.GetFromBytes(data);
+                if (pkmInfo == null)
+                {
+                    content = System.Text.Encoding.UTF8.GetString(data);
+                }
+                else
+                {
+                    var set = new ShowdownSet(pkmInfo);
+                    content = set.Text;
+                }
+            } 
+            catch { }
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Please provide a list of Showdown sets separated by '---'.");
+            return;
+        }
+
+        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
+        var batchSettings = Hub.Config.Trade.BatchSettings;
+        if (!batchSettings.AllowBatchTrades)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch trades are disabled.");
+            return;
+        }
+
+        var sets = TradeModuleHelpers.ParseBatchTradeContent(BatchNormalizer.NormalizeBatchCommands(content));
+        if (sets.Count == 0 || sets.Count > batchSettings.MaxPkmsPerTrade)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, $"You must provide between 1 and {batchSettings.MaxPkmsPerTrade} sets.");
+            return;
+        }
+
+        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
+        var pkmList = new List<T>();
+        foreach (var setStr in sets)
+        {
+            var ignoreAutoOT = setStr.Contains("OT:") || setStr.Contains("TID:") || setStr.Contains("SID:");
+            var res = await StoatHelper<T>.ProcessShowdownSetAsync(setStr, ignoreAutoOT, userIdNumeric);
+            if (res.Pokemon != null) pkmList.Add(res.Pokemon);
+        }
+
+        if (pkmList.Count == 0)
+        {
+            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "No valid sets found.");
+            return;
+        }
+
+        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], pkmList, message.AuthorId, message.Author!.Username);
     }
 
     [StoatCommand("clone", "c")]
@@ -385,69 +645,7 @@ public partial class SysStoat<T>
         await StoatHelper<T>.AddToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkm, message.AuthorId, message.Author!.Username, lgcode, isHiddenTrade: true);
     }
 
-    [StoatCommand("batchtrade", "bt")]
-    private async Task HandleBatchTradeCommandAsync(UserMessage message, List<string> args)
-    {
-        if (!await CheckPermissions(message, Hub.Config.Stoat.RoleCanTrade)) return;
 
-        string content = string.Join(" ", args);
-        if (string.IsNullOrWhiteSpace(content) && message.Attachments?.Count > 0)
-        {
-            try 
-            {
-                var data = await SysBot.Pokemon.Helpers.NetUtil.HttpClient.GetByteArrayAsync("https://cdn.stoatusercontent.com/attachments/" + message.Attachments[0].Id + "/" + Uri.EscapeDataString(message.Attachments[0].Filename));
-                var pkmInfo = EntityFormat.GetFromBytes(data);
-                if (pkmInfo == null)
-                {
-                    content = System.Text.Encoding.UTF8.GetString(data);
-                }
-                else
-                {
-                    var set = new ShowdownSet(pkmInfo);
-                    content = set.Text;
-                }
-            } 
-            catch { }
-        }
-
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Please provide a list of Showdown sets separated by '---'.");
-            return;
-        }
-
-        ulong userIdNumeric = StoatHelper<T>.ConvertId(message.AuthorId);
-        var batchSettings = Hub.Config.Trade.BatchSettings;
-        if (!batchSettings.AllowBatchTrades)
-        {
-            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "Batch trades are disabled.");
-            return;
-        }
-
-        var sets = TradeModuleHelpers.ParseBatchTradeContent(BatchNormalizer.NormalizeBatchCommands(content));
-        if (sets.Count == 0 || sets.Count > batchSettings.MaxPkmsPerTrade)
-        {
-            await StoatHelper<T>.SendAsync(_client, message.ChannelId, $"You must provide between 1 and {batchSettings.MaxPkmsPerTrade} sets.");
-            return;
-        }
-
-        int code = Hub.Queues.Info.GetRandomTradeCode(userIdNumeric);
-        var pkmList = new List<T>();
-        foreach (var setStr in sets)
-        {
-            var ignoreAutoOT = setStr.Contains("OT:") || setStr.Contains("TID:") || setStr.Contains("SID:");
-            var res = await StoatHelper<T>.ProcessShowdownSetAsync(setStr, ignoreAutoOT, userIdNumeric);
-            if (res.Pokemon != null) pkmList.Add(res.Pokemon);
-        }
-
-        if (pkmList.Count == 0)
-        {
-            await StoatHelper<T>.SendAsync(_client, message.ChannelId, "No valid sets found.");
-            return;
-        }
-
-        await StoatHelper<T>.AddBatchContainerToQueueAsync(_client, message.ChannelId, code, message.Author!.Username, pkmList[0], pkmList, message.AuthorId, message.Author!.Username);
-    }
 
 
 

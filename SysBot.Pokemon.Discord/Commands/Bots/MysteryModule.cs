@@ -23,11 +23,15 @@ namespace SysBot.Pokemon.Discord
         [Summary("Trades an egg generated from a random Pokémon.")]
         public async Task TradeMysteryEggAsync()
         {
-            // LGPE does not support eggs/breeding
             var context = GetContext();
-            if (context == EntityContext.None || typeof(T).Name == "PB7")
+            if (context == EntityContext.Gen7b || typeof(T).Name == "PB7")
             {
                 await ReplyAsync("Mystery Eggs are not available for Let's Go Pikachu/Eevee as the game does not support breeding.").ConfigureAwait(false);
+                return;
+            }
+            if (context == EntityContext.Gen8a || typeof(T).Name == "PA8")
+            {
+                await ReplyAsync("Mystery Eggs are not available for Pokémon Legends: Arceus as the game does not support breeding.").ConfigureAwait(false);
                 return;
             }
 
@@ -55,13 +59,17 @@ namespace SysBot.Pokemon.Discord
         [Command("batchMysteryEgg")]
         [Alias("bme")]
         [Summary("Trades multiple Mystery Eggs at once.")]
-        public async Task BatchMysteryEggAsync([Summary("Number of eggs")] int count = 2)
+        public async Task BatchMysteryEggAsync([Summary("Number of eggs")] int count = 0)
         {
-            // LGPE does not support eggs/breeding
             var context = GetContext();
-            if (context == EntityContext.None || typeof(T).Name == "PB7")
+            if (context == EntityContext.Gen7b || typeof(T).Name == "PB7")
             {
                 await ReplyAsync("Mystery Eggs are not available for Let's Go Pikachu/Eevee as the game does not support breeding.").ConfigureAwait(false);
+                return;
+            }
+            if (context == EntityContext.Gen8a || typeof(T).Name == "PA8")
+            {
+                await ReplyAsync("Mystery Eggs are not available for Pokémon Legends: Arceus as the game does not support breeding.").ConfigureAwait(false);
                 return;
             }
 
@@ -82,6 +90,9 @@ namespace SysBot.Pokemon.Discord
 
             // Validate count
             int maxEggs = batchSettings.MaxMysteryEggsPerBatch;
+            if (count <= 0)
+                count = maxEggs;
+
             if (count < 1 || count > maxEggs)
             {
                 await Helpers<T>.ReplyAndDeleteAsync(Context,
@@ -172,7 +183,7 @@ namespace SysBot.Pokemon.Discord
         [Command("batchMysteryPokemon")]
         [Alias("bmp")]
         [Summary("Trades multiple Mystery Pokémon at once.")]
-        public async Task BatchMysteryPokemonAsync([Summary("Number of Pokémon")] int count = 2)
+        public async Task BatchMysteryPokemonAsync([Summary("Number of Pokémon")] int count = 0)
         {
             var batchSettings = SysCord<T>.Runner.Config.Trade.BatchSettings;
             if (!batchSettings.AllowMysteryPokemonBatchTrades)
@@ -191,6 +202,9 @@ namespace SysBot.Pokemon.Discord
 
             // Validate count
             int maxPkms = batchSettings.MaxMysteryPokemonPerBatch;
+            if (count <= 0)
+                count = maxPkms;
+
             if (count < 1 || count > maxPkms)
             {
                 await Helpers<T>.ReplyAndDeleteAsync(Context,
@@ -254,10 +268,11 @@ namespace SysBot.Pokemon.Discord
 
         private static async Task ProcessBatchMysteryItems(SocketCommandContext context, List<T> batchList, int batchTradeCode, int totalItems, string typeName, string imageUrl)
         {
+            bool isMysteryEgg = typeName.Equals("Mystery Egg", StringComparison.OrdinalIgnoreCase);
             var sig = context.User.GetFavor();
             var firstItem = batchList[0];
             var trainer = new PokeTradeTrainerInfo(context.User.Username, context.User.Id);
-            var notifier = new DiscordTradeNotifier<T>(firstItem, trainer, batchTradeCode, context.User, 1, totalItems, true, lgcode: [], fallbackChannel: context.Channel);
+            var notifier = new DiscordTradeNotifier<T>(firstItem, trainer, batchTradeCode, context.User, 1, totalItems, isMysteryEgg, lgcode: [], fallbackChannel: context.Channel);
 
             int uniqueTradeID = TradeUtil.GenerateUniqueTradeID();
 
@@ -271,7 +286,7 @@ namespace SysBot.Pokemon.Discord
                 null,
                 1,
                 batchList.Count,
-                true,
+                isMysteryEgg,
                 true,
                 uniqueTradeID
             )
@@ -288,14 +303,30 @@ namespace SysBot.Pokemon.Discord
             await EmbedHelper.SendTradeCodeEmbedAsync(context.User, batchTradeCode).ConfigureAwait(false);
 
             // Start queue position updates for Discord notification
-            if (added != QueueResultAdd.AlreadyInQueue && notifier is DiscordTradeNotifier<T> discordNotifier)
+            if (added != QueueResultAdd.AlreadyInQueue && added != QueueResultAdd.NotAllowedItem && added != QueueResultAdd.QueueFull && notifier is DiscordTradeNotifier<T> discordNotifier)
             {
+                discordNotifier.UpdateUniqueTradeID(uniqueTradeID);
                 await discordNotifier.SendInitialQueueUpdate().ConfigureAwait(false);
             }
 
             if (added == QueueResultAdd.AlreadyInQueue)
             {
                 await context.Channel.SendMessageAsync("You are already in the queue!").ConfigureAwait(false);
+                return;
+            }
+
+            if (added == QueueResultAdd.QueueFull)
+            {
+                var maxCount = SysCord<T>.Runner.Config.Queues.MaxQueueCount;
+                var embed = new EmbedBuilder()
+                    .WithColor(Color.Red)
+                    .WithTitle("Queue Full")
+                    .WithDescription($"The queue is currently full ({maxCount}/{maxCount}). Please try again later.")
+                    .WithFooter("Queue will open as trades are completed")
+                    .WithTimestamp(DateTimeOffset.Now)
+                    .Build();
+
+                await context.Channel.SendMessageAsync(embed: embed).ConfigureAwait(false);
                 return;
             }
 
@@ -396,12 +427,6 @@ namespace SysBot.Pokemon.Discord
             return result;
         }
 
-        private static EntityContext GetContext() => typeof(T).Name switch
-        {
-            "PB8" => EntityContext.Gen8b,
-            "PK8" => EntityContext.Gen8,
-            "PK9" => EntityContext.Gen9,
-            _ => EntityContext.None
-        };
+        private static EntityContext GetContext() => new T().Context;
     }
 }

@@ -166,7 +166,23 @@ namespace SysBot.Pokemon.Discord
         [Alias("bsrp")]
         [Summary("Requests multiple wondercard events from the specified generation/game and adds them to a batch trade queue.")]
         [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
+        public async Task BatchSpecialEventRequestAsync([Summary("Trade Code")] int code, string generationOrGame, [Remainder] string args = "")
+        {
+            await ProcessBatchSpecialEventRequestInternalAsync(code, generationOrGame, args).ConfigureAwait(false);
+        }
+
+        [Command("batchspecialrequestpokemon")]
+        [Alias("bsrp")]
+        [Summary("Requests multiple wondercard events from the specified generation/game and adds them to a batch trade queue.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
         public async Task BatchSpecialEventRequestAsync(string generationOrGame, [Remainder] string args = "")
+        {
+            var userID = Context.User.Id;
+            var code = Info.GetRandomTradeCode(userID);
+            await ProcessBatchSpecialEventRequestInternalAsync(code, generationOrGame, args).ConfigureAwait(false);
+        }
+
+        private async Task ProcessBatchSpecialEventRequestInternalAsync(int code, string generationOrGame, string args)
         {
             var batchSettings = SysCord<T>.Runner.Config.Trade.BatchSettings;
             if (!batchSettings.AllowMysteryGiftBatchTrades)
@@ -176,20 +192,15 @@ namespace SysBot.Pokemon.Discord
             }
 
             var userID = Context.User.Id;
-            if (Info.IsUserInQueue(userID))
+            if (!await Helpers<T>.EnsureUserNotInQueueAsync(userID))
             {
-                await ReplyAsync("You already have an existing trade in the queue. Please wait until it is processed.").ConfigureAwait(false);
+                await Helpers<T>.ReplyAndDeleteAsync(Context,
+                    "You already have an existing trade in the queue that cannot be cleared. Please wait until it is processed.", 2);
                 return;
             }
 
-            // Parse indices
-            var parts = args.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries);
-            var indices = new List<int>();
-            foreach (var part in parts)
-            {
-                if (int.TryParse(part, out int idx))
-                    indices.Add(idx);
-            }
+            // Parse indices (supports lists and ranges like 1-3, 1,2,5)
+            var indices = TradeModuleHelpers.ParseEventIndices(args);
 
             if (indices.Count == 0)
             {
@@ -267,7 +278,6 @@ namespace SysBot.Pokemon.Discord
                     return;
                 }
 
-                var code = Info.GetRandomTradeCode(userID);
                 await BatchHelpers<T>.ProcessBatchContainer(Context, pkList, code, pkList.Count).ConfigureAwait(false);
             }
             catch (Exception ex)

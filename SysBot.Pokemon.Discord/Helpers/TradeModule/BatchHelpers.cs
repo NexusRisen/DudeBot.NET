@@ -181,13 +181,13 @@ public static class BatchHelpers<T> where T : PKM, new()
     }
 
     public static async Task ProcessBatchContainer(SocketCommandContext context, List<T> batchPokemonList,
-        int batchTradeCode, int totalTrades)
+        int batchTradeCode, int totalTrades, bool isMysteryEgg = false)
     {
         var sig = context.User.GetFavor();
         var firstPokemon = batchPokemonList[0];
 
         await QueueHelper<T>.AddBatchContainerToQueueAsync(context, batchTradeCode, context.User.Username,
-            firstPokemon, batchPokemonList, sig, context.User, totalTrades).ConfigureAwait(false);
+            firstPokemon, batchPokemonList, sig, context.User, totalTrades, isMysteryEgg: isMysteryEgg).ConfigureAwait(false);
     }
 
     public static string BuildDetailedBatchErrorMessage(List<BatchTradeError> errors, int totalTrades)
