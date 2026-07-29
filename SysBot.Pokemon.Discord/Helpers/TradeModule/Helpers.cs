@@ -115,11 +115,18 @@ public static class Helpers<T> where T : PKM, new()
     {
         try
         {
+            if (message.Channel is IDMChannel && !message.Author.IsBot)
+                return;
+
             await message.DeleteAsync();
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMessage)
         {
             // Ignore Unknown Message exception
+        }
+        catch (HttpException)
+        {
+            // Ignore other Discord HTTP exceptions
         }
     }
 

@@ -680,59 +680,77 @@ public sealed class SysCord<T> : IDisposable where T : PKM, new()
 
     private async Task MonitorStatusAsync(CancellationToken token)
     {
-        const int Interval = 20; // seconds
+        const int CheckIntervalSeconds = 10;
         int unhealthySeconds = 0;
+        UserStatus? currentStatus = null;
 
-        // Check datetime for update
-        UserStatus state = UserStatus.Idle;
         while (!token.IsCancellationRequested)
         {
-            if (_client.ConnectionState != ConnectionState.Connected)
+            try
             {
-                unhealthySeconds += Interval;
-                if (unhealthySeconds >= 120)
+                if (_client.ConnectionState != ConnectionState.Connected)
                 {
-                    LogUtil.LogText("SysCord: Gateway unhealthy for 2 minutes. Exiting MonitorStatusAsync to force client rebuild.");
-                    return; // Return so MainAsync finishes and supervisor loop recreates the client.
+                    unhealthySeconds += CheckIntervalSeconds;
+                    if (unhealthySeconds >= 120)
+                    {
+                        LogUtil.LogText("SysCord: Gateway unhealthy for 2 minutes. Exiting MonitorStatusAsync to force client rebuild.");
+                        return;
+                    }
+                    await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), token).ConfigureAwait(false);
+                    continue;
                 }
-            }
-            else
-            {
+
                 unhealthySeconds = 0;
-            }
 
-            var time = DateTime.Now;
-            var lastLogged = LogUtil.LastLogged;
-            if (Hub.Config.Discord.BotColorStatusTradeOnly)
-            {
-                var recent = Hub.Bots.ToArray()
-                    .Where(z => z.Config.InitialRoutine.IsTradeBot())
-                    .MaxBy(z => z.LastTime);
-                lastLogged = recent?.LastTime ?? time;
-            }
-            var delta = time - lastLogged;
-            var gap = TimeSpan.FromSeconds(Interval) - delta;
+                bool canQueue = Hub.Queues.Info.GetCanQueue();
+                bool isRunnerActive = _runner != null && _runner.IsRunning;
 
-            bool noQueue = !Hub.Queues.Info.GetCanQueue();
-            if (gap <= TimeSpan.Zero)
-            {
-                var idle = noQueue ? UserStatus.DoNotDisturb : UserStatus.Idle;
-                if (idle != state)
+                UserStatus targetStatus;
+                if (!canQueue || !isRunnerActive)
                 {
-                    state = idle;
-                    await _client.SetStatusAsync(state).ConfigureAwait(false);
+                    // DND (Red) when queue requests are closed/paused or bot runner is stopped
+                    targetStatus = UserStatus.DoNotDisturb;
                 }
-                await Task.Delay(2_000, token).ConfigureAwait(false);
-                continue;
+                else
+                {
+                    var now = DateTime.Now;
+                    var lastLogged = LogUtil.LastLogged;
+                    if (Hub.Config.Discord.BotColorStatusTradeOnly)
+                    {
+                        var recent = Hub.Bots.ToArray()
+                            .Where(z => z.Config.InitialRoutine.IsTradeBot())
+                            .MaxBy(z => z.LastTime);
+                        lastLogged = recent?.LastTime ?? now;
+                    }
+
+                    var idleTime = now - lastLogged;
+                    bool hasPendingQueue = Hub.Queues.Info.Count > 0;
+
+                    // Online (Green) when queue is active or trade activity occurred within last 5 minutes (300 seconds)
+                    // Idle (Yellow/Orange) when open but standing by with no trade activity for > 5 minutes
+                    if (hasPendingQueue || idleTime < TimeSpan.FromMinutes(5))
+                    {
+                        targetStatus = UserStatus.Online;
+                    }
+                    else
+                    {
+                        targetStatus = UserStatus.Idle;
+                    }
+                }
+
+                if (targetStatus != currentStatus)
+                {
+                    currentStatus = targetStatus;
+                    await _client.SetStatusAsync(targetStatus).ConfigureAwait(false);
+                    await Log(new LogMessage(LogSeverity.Info, "Status", $"Discord presence status updated to {targetStatus}")).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUtil.LogSafe(ex, "MonitorStatusAsync");
             }
 
-            var active = noQueue ? UserStatus.DoNotDisturb : UserStatus.Online;
-            if (active != state)
-            {
-                state = active;
-                await _client.SetStatusAsync(state).ConfigureAwait(false);
-            }
-            await Task.Delay(gap, token).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), token).ConfigureAwait(false);
         }
     }
 
@@ -741,7 +759,7 @@ public sealed class SysCord<T> : IDisposable where T : PKM, new()
     {
         var mgr = Manager;
         var cfg = mgr.Config;
-        if (cfg.ConvertPKMToShowdownSet && (cfg.ConvertPKMReplyAnyChannel || mgr.CanUseCommandChannel(msg.Channel.Id)))
+        if (cfg.ConvertPKMToShowdownSet && (cfg.ConvertPKMReplyAnyChannel || msg.Channel is IDMChannel || mgr.CanUseCommandChannel(msg.Channel.Id)))
         {
             if (msg is SocketUserMessage userMessage)
             {
@@ -758,7 +776,7 @@ public sealed class SysCord<T> : IDisposable where T : PKM, new()
         {
             var AbuseSettings = Hub.Config.TradeAbuse;
             // Check if the user is in the bannedIDs list
-            if (msg.Author is SocketGuildUser user && AbuseSettings.BannedIDs.List.Any(z => z.ID == user.Id))
+            if (AbuseSettings.BannedIDs.List.Any(z => z.ID == msg.Author.Id))
             {
                 await SysCord<T>.SafeSendMessageAsync(msg.Channel, "You are banned from using this bot.").ConfigureAwait(false);
                 return true;
@@ -771,7 +789,7 @@ public sealed class SysCord<T> : IDisposable where T : PKM, new()
                 return true;
             }
 
-            if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
+            if (msg.Channel is not IDMChannel && !mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
             {
                 if (Hub.Config.Discord.ReplyCannotUseCommandInChannel)
                     await SysCord<T>.SafeSendMessageAsync(msg.Channel, "You can't use that command here.").ConfigureAwait(false);

@@ -740,18 +740,21 @@ public static class QueueHelper<T> where T : PKM, new()
         {
             case DiscordErrorCode.InsufficientPermissions or DiscordErrorCode.MissingPermissions:
                 {
-                    var permissions = context.Guild.CurrentUser.GetPermissions(context.Channel as IGuildChannel);
-                    if (!permissions.SendMessages)
+                    if (context.Guild != null)
                     {
-                        message = "You must grant me \"Send Messages\" permissions!";
-                        Base.LogUtil.LogError("QueueHelper", message);
-                        return;
-                    }
-                    if (!permissions.ManageMessages)
-                    {
-                        var app = await context.Client.GetApplicationInfoAsync().ConfigureAwait(false);
-                        var owner = app.Owner.Id;
-                        message = $"<@{owner}> You must grant me \"Manage Messages\" permissions!";
+                        var permissions = context.Guild.CurrentUser.GetPermissions(context.Channel as IGuildChannel);
+                        if (!permissions.SendMessages)
+                        {
+                            message = "You must grant me \"Send Messages\" permissions!";
+                            Base.LogUtil.LogError("QueueHelper", message);
+                            return;
+                        }
+                        if (!permissions.ManageMessages)
+                        {
+                            var app = await context.Client.GetApplicationInfoAsync().ConfigureAwait(false);
+                            var owner = app.Owner.Id;
+                            message = $"<@{owner}> You must grant me \"Manage Messages\" permissions!";
+                        }
                     }
                 }
                 break;

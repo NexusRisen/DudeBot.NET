@@ -1,15 +1,19 @@
 # Release Notes
 
-## [9.1.21]
-- **Help Command System Reorganization & Fixes**:
-  - Organized Discord help commands into 5 intuitive categories (`Trading & Distribution`, `Queue & Info`, `Bot Management`, `Sudo & Admin`, `Extras & Utilities`).
-  - Fixed duplicate command entries caused by multi-instantiated generic modules (`TradeModule<T>`).
-  - Added command alias displays (e.g. `trade` (aliases: `t`)) to help lists.
-  - Enhanced detailed command help (`help <command>`) with category, usage syntax, parameter types, optional flags, default values, and summaries.
-  - Updated Stoat bot help with full coverage of all missing commands grouped by category.
+## [9.1.22]
+- **Direct Message (DM) Support & Configuration Reorganization**:
+  - Added full support for executing trade commands (`.trade`, `.t`), general commands, and uploading PKHeX files (`.pk8`, `.pk9`, etc.) directly via Direct Messages (DMs) with the bot.
+  - Enhanced precondition attributes (`RequireQueueRoleAttribute`, `RequireRoleAccessAttribute`) to resolve user roles across shared Discord servers during DM interactions.
+  - Added null safety checks and DM message deletion error prevention.
+  - Reorganized program settings into clean, numbered, logically grouped categories across `DiscordSettings`, `PokeTradeHubConfig`, and `TradeSettings`.
 
-## [9.1.19]
-- **Discord Trade Embed Improvements**:
-  - Organized the `📍 Origin & Physical` section into structured, multiline key-value pairs (`Met Level`, `Met Date`, `Met Location`, `Scale`).
-  - Cleaned up `Met Location` formatting by removing awkward nested bold markdown around location IDs.
-  - Removed Home Tracker notice fields (`Home Tracker Detected`, `No Home Tracker`, and `Tracker ID`) from Discord trade embeds to streamline embed display.
+- **Enhanced Trade Abuse System & Nintendo NID Auto-Banning**:
+  - Added `CheckMultiAccountAllTrades` setting to enforce multi-account seller detection across trade queues.
+  - Enhanced `CheckPartnerReputation` to automatically add an offender's 64-bit Nintendo Account Network ID (`TrainerNID` / console identifier) to `BannedIDs` when multi-account abuse or cooldown evasion occurs during standard trade requests (distribution trades excluded).
+  - Instantly blocks all future trade attempts from auto-banned console NIDs across any Discord account or in-game Trainer Name.
+
+- **Discord Presence & Status Fixes (Online, Idle, DND)**:
+  - Fixed status monitoring in `SysCord.cs` to eliminate rapid 20-second status flickering.
+  - **Online (Green)**: Active when queue is open and trades are in queue or recent activity occurred within 5 minutes.
+  - **Idle (Yellow/Orange)**: Active when queue is open and bot is running, but standing by with no trades for over 5 minutes.
+  - **Do Not Disturb (DND/Red)**: Active when queue requests are closed/paused or bot runner is stopped.

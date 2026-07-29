@@ -34,6 +34,9 @@ public class TradeAbuseSettings
     [Category(Monitoring), Description("When a person is blocked in-game for multiple accounts, their online ID is added to BannedIDs.")]
     public bool BanIDWhenBlockingUser { get; set; } = true;
 
+    [Category(Monitoring), Description("When set to True, multi-account evasion checking will apply to all trade types (not just distribution).")]
+    public bool CheckMultiAccountAllTrades { get; set; } = true;
+
     [Category(Monitoring), Description("If not empty, the provided string will be appended to Echo alerts to notify whomever you specify when a user is found using multiple accounts. For Discord, use <@userIDnumber> to mention.")]
     public string MultiAbuseEchoMention { get; set; } = string.Empty;
 

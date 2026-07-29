@@ -149,10 +149,14 @@ public abstract class PokeRoutineExecutor<T>(IConsoleBotManaged<IConsoleConnecti
         var isDistribution = poke.Type == PokeTradeType.Random;
         var list = isDistribution ? PreviousUsersDistribution : PreviousUsers;
 
+        if (TrainerNID == 0)
+            return PokeTradeResult.Success;
+
         // Matches to a list of banned NIDs, in case the user ever manages to enter a trade.
         var entry = AbuseSettings.BannedIDs.List.Find(z => z.ID == TrainerNID);
         if (entry != null)
         {
+            Log($"Matched banned Nintendo Account NID ({TrainerNID}) for user {user.TrainerName} (OT: {TrainerName}). Quitting trade.");
             return PokeTradeResult.SuspiciousActivity;
         }
 
@@ -168,23 +172,29 @@ public abstract class PokeRoutineExecutor<T>(IConsoleBotManaged<IConsoleConnecti
             if (cd != 0 && TimeSpan.FromMinutes(cd) > delta)
             {
                 Log($"Found {user.TrainerName} ignoring the {cd} minute trade cooldown. Last encountered {delta.TotalMinutes:F1} minutes ago.");
-                return PokeTradeResult.SuspiciousActivity;
+                quit = true;
             }
 
-            // For distribution trades only, flag users using multiple Discord/Twitch accounts to send to the same in-game player within the TradeAbuseExpiration time limit.
-            // This is usually to evade a ban or a trade cooldown.
-            if (isDistribution && previous.NetworkID == TrainerNID && previous.RemoteID != user.ID)
+            // Flag users using multiple Discord/messaging accounts on the same Nintendo console (NID) within the TradeAbuseExpiration time limit.
+            if ((isDistribution || AbuseSettings.CheckMultiAccountAllTrades) && previous.NetworkID == TrainerNID && previous.RemoteID != user.ID)
             {
                 if (delta < TimeSpan.FromMinutes(AbuseSettings.TradeAbuseExpiration))
                 {
                     quit = true;
-                    Log($"Found {user.TrainerName} using multiple accounts.\nPreviously traded with {previous.Name} ({previous.RemoteID}) {delta.TotalMinutes:F1} minutes ago on OT: {TrainerName}.");
+                    Log($"Trade Abuse Detected: {user.TrainerName} using multiple accounts for Nintendo NID {TrainerNID}.\nPreviously traded with {previous.Name} ({previous.RemoteID}) {delta.TotalMinutes:F1} minutes ago on OT: {TrainerName}.");
                 }
             }
         }
 
         if (quit)
+        {
+            if (!isDistribution && AbuseSettings.BanIDWhenBlockingUser)
+            {
+                AbuseSettings.BannedIDs.AddIfNew([new RemoteControlAccess { ID = TrainerNID, Name = TrainerName, Comment = "Auto-banned multi-account abuser" }]);
+                Log($"Auto-banned Nintendo Account NID {TrainerNID} to BannedIDs list.");
+            }
             return PokeTradeResult.SuspiciousActivity;
+        }
 
         return PokeTradeResult.Success;
     }
